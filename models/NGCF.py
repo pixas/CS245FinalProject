@@ -8,6 +8,19 @@ class NGCF(nn.Module):
     def __init__(self, n_authors: int, n_papers: int, dropout: float, 
                  num_layers: int, embed_dim: int, paper_dim: int, author_dim: int,
                  norm_adj: SparseTensor, n_fold: int) -> None:
+        """Initializes internal Module state of NGCF.
+
+        Args:
+            n_authors (int): number of authors
+            n_papers (int): number of paper
+            dropout (float): the dropout rate
+            num_layers (int): the layer of convolutional layers
+            embed_dim (int): the internal embedding dimension for all layers
+            paper_dim (int): the dimension for paper embedding. Default to `embed_dim`
+            author_dim (int): the dimension for author embedding. Default to `embed_dim`
+            norm_adj (SparseTensor): the Laplacian Matrix of adjacent matrix
+            n_fold (int): cannot multiply (N+M, N+M) with (N+M, d); split into several (N+M/n_fold, N+M) and (N+M, d) and concatenate them together in the end.
+        """
         super(NGCF, self).__init__()
         self.n_authors = n_authors
         self.n_papers = n_papers
