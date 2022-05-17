@@ -61,19 +61,19 @@ class RandomWalk(nn.Module):
         """update author embedding and paper_embedding with LSTM or Attention
 
         Args:
-            author_embedding (Tensor): (batch_size, N, d), where N is the number of authors
-            paper_embedding (Tensor): (batch_size, M, d), where M is the number of paper
-            author_selected_idx (Tensor): (batch_size, T), where T is the length of random walk (T << N)
-            paper_selected_idx (Tensor): (batch_size, T), where T is the length of random walk (T << M)
+            author_embedding (Tensor): (N, d), where N is the number of authors
+            paper_embedding (Tensor): (M, d), where M is the number of paper
+            author_selected_idx (Tensor): (T, 1), where T is the length of random walk (T << N)
+            paper_selected_idx (Tensor): (T, 1), where T is the length of random walk (T << M)
 
         Returns:
             _type_: _description_
         """
-        paper_selected_idx = paper_selected_idx.repeat((1, 1, self.embed_dim))
-        author_selected_idx = author_selected_idx.repeat((1, 1, self.embed_dim))
+        paper_selected_idx = paper_selected_idx.repeat((1, self.embed_dim))
+        author_selected_idx = author_selected_idx.repeat((1, self.embed_dim))
         
-        paper_selected_embedding = paper_embedding.gather(1, paper_selected_idx)
-        author_selected_embedding = author_embedding.gather(1, author_selected_idx)
+        paper_selected_embedding = paper_embedding.gather(0, paper_selected_idx).unsqueeze(0)
+        author_selected_embedding = author_embedding.gather(0, author_selected_idx).unsqueeze(0)
         
         if self.module_type == 'attention':
             for i, layer in enumerate(self.layers_paper):
@@ -88,11 +88,11 @@ class RandomWalk(nn.Module):
             paper_selected_embedding = self.layer_paper(paper_selected_embedding)
             author_selected_embedding = self.layer_author(author_selected_embedding)
         
-        paper_selected_embedding = self.out_paper_norm(paper_selected_embedding)
-        author_selected_embedding = self.out_author_norm(author_selected_embedding)
+        paper_selected_embedding = self.out_paper_norm(paper_selected_embedding).squeeze(0)
+        author_selected_embedding = self.out_author_norm(author_selected_embedding).squeeze(0)
         
-        author_embedding.scatter_(1, author_selected_idx, author_selected_embedding)
-        paper_embedding.scatter_(1, paper_selected_idx, paper_selected_embedding)
+        author_embedding.scatter_(0, author_selected_idx, author_selected_embedding)
+        paper_embedding.scatter_(0, paper_selected_idx, paper_selected_embedding)
         
         return author_embedding, paper_embedding
         
