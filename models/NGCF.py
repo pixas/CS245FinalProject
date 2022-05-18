@@ -56,6 +56,7 @@ class NGCF(nn.Module):
     
     def _split_A_hat(self, X: SparseTensor):
         A_fold_hat = []
+        X = X.to_sparse_csr()
 
         fold_len = (self.n_authors + self.n_papers) // self.n_fold
         for i_fold in range(self.n_fold):
