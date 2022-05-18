@@ -76,16 +76,17 @@ class NGCF(nn.Module):
             author_embedding (Tensor): (N, d): author embedding after undertaking random walk and BiLSTM
             paper_embedding (Tensor): (M, d): paper embedding after undertaking random walk and BiLSTM
         """
-        A_fold_hat = self._split_A_hat(self.norm_adj)
+        # A_fold_hat = self._split_A_hat(self.norm_adj)
         ego_embeddings = torch.cat([author_embedding, paper_embedding], 0)
         all_embeddings = [ego_embeddings]
         
         for k in range(self.num_layers):
-            temp_embed = []
-            for f in range(self.n_fold):
-                temp_embed.append(A_fold_hat[f] @ ego_embeddings)
+            # temp_embed = []
+            # for f in range(self.n_fold):
+            #     temp_embed.append(A_fold_hat[f] @ ego_embeddings)
             
-            side_embeddings = torch.cat(temp_embed, 0)
+            # side_embeddings = torch.cat(temp_embed, 0)
+            side_embeddings = self.norm_adj @ ego_embeddings
             sum_embeddings = self.relu1[k](self.weights_1[k](side_embeddings))
             
             bi_embeddings = ego_embeddings * side_embeddings
@@ -99,7 +100,7 @@ class NGCF(nn.Module):
             all_embeddings.append(norm_embeddings)
         
         all_embeddings = torch.cat(all_embeddings, 1)
-        author_embedding_new, paper_embedding_new = torch.split(all_embeddings, [self.n_authors, self.n_papers, 0])
+        author_embedding_new, paper_embedding_new = torch.split(all_embeddings, [self.n_authors, self.n_papers], 0)
         
         return author_embedding_new, paper_embedding_new
             
