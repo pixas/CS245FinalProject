@@ -1,11 +1,11 @@
 import torch 
-from torch.nn import nn
+import torch.nn as nn
 import torch.nn.functional as F 
 from torch import Tensor 
 from argparse import ArgumentParser
 from torch_sparse import SparseTensor
-from NGCF import NGCF
-from random_walk import RandomWalk
+from models.NGCF import NGCF
+from models.random_walk import RandomWalk
 
 class General(nn.Module):
     def __init__(self, RWembed_dim: int, stack_layers: int, dropoutRW: float,
@@ -15,7 +15,6 @@ class General(nn.Module):
                 norm_adj: SparseTensor, n_fold: int,
                 args: ArgumentParser) -> None:
         """initializes General model
-
         Args:
         RW:
             RWembed_dim (int): embedding size for all hidden states and embeddings
@@ -34,7 +33,7 @@ class General(nn.Module):
             n_fold (int): cannot multiply (N+M, N+M) with (N+M, d) directly; split into several (N+M/n_fold, N+M) and (N+M, d) and concatenate them together in the end.
         """
         super(General, self).__init__()
-        self.RW = RandomWalk(RWembed_dim,stack_layers,dropoutRW,args)
+        self.RW = RandomWalk(RWembed_dim, stack_layers, dropoutRW, args)
         self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
                  num_layers, NGCFembed_dim, paper_dim, author_dim,
                  norm_adj, n_fold)
@@ -45,17 +44,15 @@ class General(nn.Module):
                 author_selected_idx: Tensor, 
                 paper_selected_idx: Tensor):
         """update General model
-
         Args:
             author_embedding (Tensor): (N, d), where N is the number of authors
             paper_embedding (Tensor): (M, d), where M is the number of paper
             author_selected_idx (Tensor): (T, 1), where T is the length of random walk (T << N)
             paper_selected_idx (Tensor): (T, 1), where T is the length of random walk (T << M)
-
         Returns:
             _type_: _description_
         """
-        author_embedding, paper_embedding = self.RW(author_embedding,paper_embedding,author_selected_idx,paper_selected_idx)
-        author_embedding_new, paper_embedding_new = self.NGCF(author_embedding,paper_embedding)
+        author_embedding, paper_embedding = self.RW(author_embedding, paper_embedding, author_selected_idx, paper_selected_idx)
+        author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
         
         return author_embedding_new, paper_embedding_new

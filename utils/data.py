@@ -23,15 +23,19 @@ PAPER_PAPER_MAP_PATH = 'data/paper_paper_map.pkl'
 BIPARTITE_ADJ_PATH = 'data/bipartite_adj.pkl'
 BIPARTITE_LAP_PATH = 'data/bipartite_lap.pkl'
 AUTHOR_PAPER_MAP_PATH = 'data/author_paper_map.pkl'
+TRAIN_IDX_PATH = 'data/train_idx.pkl'
+TRAIN_AUTHORS_PATH = 'data/train_authors.pkl'
+TRAIN_PAPERS_PATH = 'data/train_papers.pkl'
 
 class Data(object):
-    def __init__(self, batch_size: int) -> None:
+    def __init__(self, random_walk_length: int) -> None:
         """Initializes internal Module state of Data.
         Args:
-            batch_size: The batch size to use for training.
+            random_walk_length: The length of random walk to use for training.
         """
-        self.batch_size = batch_size
+        self.random_walk_length = random_walk_length
         self.n_authors, self.n_papers = AUTHOR_CNT, PAPER_CNT
+        self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
         self.author_adj_matrix = self.get_author_adj_matrix()
         self.author_author_map = self.get_author_author_map()
         self.paper_adj_matrix = self.get_paper_adj_matrix()
@@ -170,6 +174,53 @@ class Data(object):
         print(f'Load paper embeddings from {PAPER_FEATURE_PATH}, time cost: {time.time() - t1: .3f}s')
         return paper_embeddings
 
+    def get_train_idx(self) -> Tuple[List[List[int]], List[int], List[int]]:
+        """Returns the training pairs, author indexes and paper indexes.
+        Returns:
+            train_idx(List[List[int]]): (train_cnt, 2).
+            train_author_idx(List[int]): All authors id in training set.
+            train_paper_idx(List[int]): All papers id in training set.
+        Note:
+            all paper indexes are in range [0, PAPER_CNT)
+        Example:
+            train_idx = [[1, 2], [3, 4], [5, 6]]
+            train_author_idx = [1, 3, 5]
+            train_paper_idx = [2, 4, 6]
+        """
+        try:
+            t1 = time.time()
+            with open(TRAIN_IDX_PATH, 'rb') as f:
+                train_idx = pickle.load(f)
+            with open(TRAIN_AUTHORS_PATH, 'rb') as f:
+                train_authors = pickle.load(f)
+            with open(TRAIN_PAPERS_PATH, 'rb') as f:
+                train_papers = pickle.load(f)
+            print(f'Load training data from {TRAIN_IDX_PATH}, time cost: {time.time() - t1: .3f}s')
+        except:
+            t1 = time.time()
+            with open(BIPARTITE_GRAPH_TRAIN_PATH, 'r') as f:
+                lines = f.readlines()
+                train_authors = set()
+                train_papers = set()
+                train_idx = []
+                for line in lines:
+                    for author, paper in [line.strip().split(' ')]:
+                        train_authors.add(int(author))
+                        train_papers.add(int(paper))
+                        train_idx.append([int(author), int(paper)])
+                train_authors = list(train_authors)
+                train_papers = list(train_papers)
+            print(f'Build training data, time cost: {time.time() - t1: .3f}s')
+            with open(TRAIN_IDX_PATH, 'wb') as f:
+                pickle.dump(train_idx, f)
+            with open(TRAIN_AUTHORS_PATH, 'wb') as f:
+                pickle.dump(train_authors, f)
+            with open(TRAIN_PAPERS_PATH, 'wb') as f:
+                pickle.dump(train_papers, f)
+        self.train_author_cnt = len(train_authors)
+        self.train_paper_cnt = len(train_papers)
+        return train_idx, train_authors, train_papers
+
     def get_bipartite_matrix(self) -> Tuple[SparseTensor, SparseTensor]:
         """Returns the adjacency matrix and Laplacian matrix of the bipartite graph.
         Returns:
@@ -177,10 +228,13 @@ class Data(object):
         """
         try:
             t1 = time.time()
+            with open(TRAIN_IDX_PATH, 'rb') as f:
+                self.train_index = pickle.load(f)
             with open(BIPARTITE_ADJ_PATH, 'rb') as f:
                 bipartite_adj_matrix = pickle.load(f)
             with open(BIPARTITE_LAP_PATH, 'rb') as f:
                 bipartite_lap_matrix = pickle.load(f)
+            print(f'Load train indexed from {TRAIN_IDX_PATH}')
             print(f'Load bipartite adjacency matrix and Laplacian matrix from {BIPARTITE_ADJ_PATH} and {BIPARTITE_LAP_PATH}, time cost: {time.time() - t1: .3f}s')
         except:
             t1 = time.time()
@@ -200,7 +254,10 @@ class Data(object):
             bipartite_lap_index = index
             bipartite_lap_value = [1 / (degree_value[author] * degree_value[paper]) ** (1 / 2) for author, paper in index]
             bipartite_lap_matrix = torch.sparse_coo_tensor(list(zip(*bipartite_lap_index)), bipartite_lap_value, (AUTHOR_CNT + PAPER_CNT, PAPER_CNT + AUTHOR_CNT))
+            print(f'Build train indexes.')
             print(f'Build bipartite adjacency matrix and Laplacian matrix, time cost: {time.time() - t1: .3f}s')
+            with open(TRAIN_IDX_PATH, 'wb') as f:
+                pickle.dump(self.train_index, f)
             with open(BIPARTITE_ADJ_PATH, 'wb') as f:
                 pickle.dump(bipartite_adj_matrix, f)
             with open(BIPARTITE_LAP_PATH, 'wb') as f:
@@ -235,53 +292,16 @@ class Data(object):
                 pickle.dump(author_paper_map, f)
         return author_paper_map
 
-    def sample(self) -> Tuple[List[int], List[int]]:
+    def sample(self) -> Tuple[Tensor, Tensor]:
         """
-        Sample several pairs of authors and papers with batch size
+        Sample two random walk path starting from two random nodes(author & paper)
         Returns:
-            The sampled authors and papers.
-        Example:
-            author 1 has cited paper 10, 11, not cited paper 12
-            author 2 has cited paper 10, 12, not cited paper 11
-            return 
-                authors:    [1, 2]
-                pos_papers: [10, 12] 
-                neg_papers: [12, 11]
+            author_path (Tensor): (random_walk_length, 1)
+            paper_path (Tensor): (random_walk_length, 1)
         """
-        authors = random.sample(range(self.n_authors), self.batch_size)
-
-        def sample_pos_papers_for_author(author: int, num: int) -> List[int]:
-            pos_papers = list(self.author_paper_map[author])
-            pos_papers_num = len(pos_papers)
-            pos_batch = []
-            while True:
-                if len(pos_batch) == num:
-                    break
-                random_idx = np.random.randint(low=0, high=pos_papers_num, size=1)[0]
-                pos_paper_idx = pos_papers[random_idx]
-                if pos_paper_idx not in pos_batch:
-                    pos_batch.append(pos_paper_idx)
-            return pos_batch
-        
-        def sample_neg_papers_for_author(author: int, num: int) -> List[int]:
-            neg_papers = list(set(range(AUTHOR_CNT, AUTHOR_CNT + self.n_papers)) - set(self.author_paper_map[author]))
-            neg_papers_num = len(neg_papers)
-            neg_batch = []
-            while True:
-                if len(neg_batch) == num:
-                    break
-                random_idx = np.random.randint(low=0, high=neg_papers_num, size=1)[0]
-                neg_paper_idx = neg_papers[random_idx]
-                if neg_paper_idx not in neg_batch:
-                    neg_batch.append(neg_paper_idx)
-            return neg_batch
-        
-        pos_papers, neg_papers = [], []
-        for author in authors:
-            pos_papers.extend(sample_pos_papers_for_author(author, 1))
-            neg_papers.extend(sample_neg_papers_for_author(author, 1))
-        
-        return authors, pos_papers, neg_papers
+        author_path = self.generate_random_walk_author(self.random_walk_length)
+        paper_path = self.generate_random_walk_paper(self.random_walk_length)
+        return author_path, paper_path
     
     def generate_random_walk_author(self, t: int) -> Tensor:
         """Generate the random walk for all authors in coauthor network.
@@ -291,14 +311,14 @@ class Data(object):
         Returns:
             random_walk_matrix (Tensor): (AUTHOR_CNT, t)
         """
-        random_walk_matrix = torch.zeros(size=(AUTHOR_CNT, t), dtype=torch.int32)
-        for author in range(AUTHOR_CNT):
-            random_walk_matrix[author, 0] = author
-            pre = author
-            for i in range(1, t):
-                cur = random.choice(list(self.author_author_map[pre]))
-                random_walk_matrix[author, i] = cur
-                pre = cur
+        random_walk_matrix = torch.zeros(size=(t, 1), dtype=torch.int64)
+        start_author = random.choice(range(0, AUTHOR_CNT))
+        random_walk_matrix[0, 0] = start_author
+        pre = start_author
+        for i in range(1, t):
+            cur = random.choice(list(self.author_author_map[pre]))
+            random_walk_matrix[i, 0] = cur
+            pre = cur
         return random_walk_matrix
 
     def generate_random_walk_paper(self, t: int) -> Tensor:
@@ -307,30 +327,37 @@ class Data(object):
         Args:
             t (int): the length of random walk (t << M).
         Returns:
-            random_walk_matrix (Tensor): (PAPER_CNT, t)
+            random_walk_matrix (Tensor): (t, 1)
         """
-        random_walk_matrix = torch.zeros(size=(PAPER_CNT, t), dtype=torch.int32)
-        for paper in range(PAPER_CNT):
-            random_walk_matrix[paper, 0] = paper
-            pre = paper
-            for i in range(1, t):
-                cur = random.choice(list(self.paper_paper_map[pre]))
-                random_walk_matrix[paper, i] = cur
-                pre = cur
+        random_walk_matrix = torch.zeros(size=(t, 1), dtype=torch.int64)
+        start_paper = random.choice(range(0, PAPER_CNT))
+        random_walk_matrix[0, 0] = start_paper
+        pre = start_paper
+        for i in range(1, t):
+            cur = random.choice(list(self.paper_paper_map[pre]))
+            random_walk_matrix[i, 0] = cur
+            pre = cur
         return random_walk_matrix
 
 if __name__ == '__main__':
-    data_generator = Data(batch_size=10)
+    data_generator = Data(random_walk_length=16)
     # print(data_generator.author_author_map[0])
     # print(data_generator.paper_paper_map[0])
     print('--author--')
-    path = data_generator.generate_random_walk_author(t=5)[0]
+    path = data_generator.sample()[0]
     for i in path:
         print(i, data_generator.author_author_map[int(i)])
     print('--paper--')
-    path = data_generator.generate_random_walk_paper(t=5)[0]
+    path = data_generator.sample()[1]
     for i in path:
         print(i, data_generator.paper_paper_map[int(i)])
+    print(data_generator.train_index[:10])
     # print(data_generator.author_adj_matrix[0])
     # print(data_generator.paper_adj_matrix[0])
     # print(data_generator.bipartite_adj_matrix[0])
+    print(len(data_generator.train_index))
+    print(data_generator.train_index[:10])
+    print(len(data_generator.train_authors))
+    print(data_generator.train_authors[:10])
+    print(len(data_generator.train_papers))
+    print(data_generator.train_papers[:10])

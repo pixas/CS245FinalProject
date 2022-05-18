@@ -7,7 +7,6 @@ class RandomWalk(nn.Module):
     def __init__(self, embed_dim: int, stack_layers: int, dropout: float,
                  args: ArgumentParser) -> None:
         """initializes the update process of random walk process
-
         Args:
             embed_dim (int): embedding size for all hidden states and embeddings
             stack_layers (int): the number of LSTM or attention modules 
@@ -59,13 +58,11 @@ class RandomWalk(nn.Module):
                 author_selected_idx: Tensor, 
                 paper_selected_idx: Tensor):
         """update author embedding and paper_embedding with LSTM or Attention
-
         Args:
             author_embedding (Tensor): (N, d), where N is the number of authors
             paper_embedding (Tensor): (M, d), where M is the number of paper
             author_selected_idx (Tensor): (T, 1), where T is the length of random walk (T << N)
             paper_selected_idx (Tensor): (T, 1), where T is the length of random walk (T << M)
-
         Returns:
             _type_: _description_
         """
