@@ -25,3 +25,7 @@ if __name__ == '__main__':
     print()
     print(nn.LogSigmoid()(e))
     # print(a.shape)
+
+    print('----------------')
+    index = [[2, 2], [3, 3], [1, 4]]
+    print(list(zip(*index)))

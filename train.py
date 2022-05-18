@@ -12,7 +12,7 @@ TRAIN_FILE_TXT = 'data/bipartite_train.txt'
 
 # TODO: load from file
 data_generator = Data(random_walk_length=16)
-pretrained_author_embedding = torch.zeros((data_generator.n_authors, 128), dtype=torch.float)
+pretrained_author_embedding = data_generator.author_embeddings
 pretrained_paper_embedding = data_generator.paper_embeddings
 
 def loss(author_embedding, paper_embedding, decay):
