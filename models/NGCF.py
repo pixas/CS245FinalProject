@@ -1,3 +1,4 @@
+from re import A
 import torch 
 import torch.nn as nn
 from torch import Tensor
@@ -56,7 +57,8 @@ class NGCF(nn.Module):
     
     def _split_A_hat(self, X: SparseTensor):
         A_fold_hat = []
-
+        device = X.device
+        print(X)
         fold_len = (self.n_authors + self.n_papers) // self.n_fold
         for i_fold in range(self.n_fold):
             start = i_fold * fold_len
@@ -65,7 +67,11 @@ class NGCF(nn.Module):
             else:
                 end = (i_fold + 1) * fold_len
 
-            A_fold_hat.append(X[start:end])
+            idx = torch.arange(start, end, dtype=torch.int64).to(device)
+            # idx = torch.linspace(start, end, 1, dtype=torch.int64).to(device)
+
+            A_fold_hat.append(X.index_select(0, idx))
+
         return A_fold_hat    
     
     def forward(self, author_embedding: Tensor, 
@@ -76,6 +82,7 @@ class NGCF(nn.Module):
             author_embedding (Tensor): (N, d): author embedding after undertaking random walk and BiLSTM
             paper_embedding (Tensor): (M, d): paper embedding after undertaking random walk and BiLSTM
         """
+
         A_fold_hat = self._split_A_hat(self.norm_adj)
         ego_embeddings = torch.cat([author_embedding, paper_embedding], 0)
         all_embeddings = [ego_embeddings]
@@ -99,7 +106,7 @@ class NGCF(nn.Module):
             all_embeddings.append(norm_embeddings)
         
         all_embeddings = torch.cat(all_embeddings, 1)
-        author_embedding_new, paper_embedding_new = torch.split(all_embeddings, [self.n_authors, self.n_papers, 0])
+        author_embedding_new, paper_embedding_new = torch.split(all_embeddings, [self.n_authors, self.n_papers], 0)
         
         return author_embedding_new, paper_embedding_new
             
