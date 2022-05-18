@@ -12,6 +12,7 @@ AUTHOR_GRAPH_PATH = 'data/author_file_ann.txt'
 PAPER_GRAPH_PATH = 'data/paper_file_ann.txt'
 BIPARTITE_GRAPH_TRAIN_PATH = 'data/bipartite_train_ann.txt'
 BIPARTITE_GRAPH_TEST_PATH = 'data/bipartite_test_ann.txt'
+AUTHOR_FEATURE_PATH = 'data/author_vec.pkl'
 PAPER_FEATURE_PATH = 'data/feature.pkl'
 AUTHOR_CNT = 6611
 PAPER_CNT = 79937
@@ -43,6 +44,9 @@ class Data(object):
         self.paper_embeddings = self.get_paper_embeddings()
         self.author_paper_map = self.get_author_paper_map()
         self.bipartite_adj_matrix, self.bipartite_lap_matrix = self.get_bipartite_matrix()
+
+        with open(AUTHOR_FEATURE_PATH, 'rb') as f:
+            self.author_embeddings = pickle.load(f)
 
     def get_author_author_map(self) -> Dict[int, Set[int]]:
         """Returns the mapping from authors to authors in coauthor network.
