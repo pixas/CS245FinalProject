@@ -12,6 +12,7 @@ AUTHOR_GRAPH_PATH = 'data/author_file_ann.txt'
 PAPER_GRAPH_PATH = 'data/paper_file_ann.txt'
 BIPARTITE_GRAPH_TRAIN_PATH = 'data/bipartite_train_ann.txt'
 BIPARTITE_GRAPH_TEST_PATH = 'data/bipartite_test_ann.txt'
+AUTHOR_FEATURE_PATH = 'data/author_vec.pkl'
 PAPER_FEATURE_PATH = 'data/feature.pkl'
 AUTHOR_CNT = 6611
 PAPER_CNT = 79937
@@ -28,11 +29,12 @@ TRAIN_AUTHORS_PATH = 'data/train_authors.pkl'
 TRAIN_PAPERS_PATH = 'data/train_papers.pkl'
 
 class Data(object):
-    def __init__(self, random_walk_length: int) -> None:
+    def __init__(self, random_walk_length: int,device) -> None:
         """Initializes internal Module state of Data.
         Args:
             random_walk_length: The length of random walk to use for training.
         """
+        self.device = device
         self.random_walk_length = random_walk_length
         self.n_authors, self.n_papers = AUTHOR_CNT, PAPER_CNT
         self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
@@ -40,9 +42,20 @@ class Data(object):
         self.author_author_map = self.get_author_author_map()
         self.paper_adj_matrix = self.get_paper_adj_matrix()
         self.paper_paper_map = self.get_paper_paper_map()
-        self.paper_embeddings = self.get_paper_embeddings()
+        # self.paper_embeddings = self.get_paper_embeddings()
         self.author_paper_map = self.get_author_paper_map()
         self.bipartite_adj_matrix, self.bipartite_lap_matrix = self.get_bipartite_matrix()
+        
+
+        with open(AUTHOR_FEATURE_PATH, 'rb') as f:
+            self.author_embeddings = pickle.load(f)
+
+        with open(PAPER_FEATURE_PATH, 'rb') as f:
+            self.paper_embeddings = pickle.load(f)
+
+        self.paper_embeddings = self.paper_embeddings.to(self.device)
+        self.author_embeddings = self.author_embeddings.to(self.device)
+
 
     def get_author_author_map(self) -> Dict[int, Set[int]]:
         """Returns the mapping from authors to authors in coauthor network.
@@ -69,7 +82,6 @@ class Data(object):
             print(f'Build author-author map, time cost: {time.time() - t1: .3f}s')
             with open(AUTHOR_AUTHOR_MAP_PATH, 'wb') as f:
                 pickle.dump(author_author_map, f)
-
         return author_author_map
 
     def get_author_adj_matrix(self) -> SparseTensor:
@@ -100,7 +112,7 @@ class Data(object):
             print(f'Build author adjacency matrix, time cost: {time.time() - t1: .3f}s')
             with open(AUTHOR_ADJ_PATH, 'wb') as f:
                 pickle.dump(author_adj_matrix, f)
-
+        author_adj_matrix = author_adj_matrix.to(self.device)
         return author_adj_matrix
 
     def get_paper_paper_map(self) -> Dict[int, Set[int]]:
@@ -129,7 +141,6 @@ class Data(object):
             print(f'Build paper-paper map, time cost: {time.time() - t1: .3f}s')
             with open(PAPER_PAPER_MAP_PATH, 'wb') as f:
                 pickle.dump(paper_paper_map, f)
-
         return paper_paper_map
 
     def get_paper_adj_matrix(self) -> SparseTensor:
@@ -160,7 +171,7 @@ class Data(object):
             print(f'Build paper adjacency matrix, time cost: {time.time() - t1: .3f}s')
             with open(PAPER_ADJ_PATH, 'wb') as f:
                 pickle.dump(paper_adj_matrix, f)
-
+        paper_adj_matrix = paper_adj_matrix.to(self.device)
         return paper_adj_matrix
 
     def get_paper_embeddings(self) -> torch.Tensor:
@@ -168,11 +179,15 @@ class Data(object):
         Returns:
             The USE feature of papers.
         """
+        paper_embs = []
         t1 = time.time()
+        
         with open(PAPER_FEATURE_PATH, 'rb') as f:
-            paper_embeddings = pickle.load(f)
+            paper_embs = pickle.load(f)
         print(f'Load paper embeddings from {PAPER_FEATURE_PATH}, time cost: {time.time() - t1: .3f}s')
-        return paper_embeddings
+        
+        # papar_embs = papar_embs.to(self.device)
+        return paper_embs
 
     def get_train_idx(self) -> Tuple[List[List[int]], List[int], List[int]]:
         """Returns the training pairs, author indexes and paper indexes.
@@ -226,6 +241,8 @@ class Data(object):
         Returns:
             The bipartite adjacency matrix and Laplacian matrix.
         """
+        bipartite_adj_matrix = []
+        bipartite_lap_index = []
         try:
             t1 = time.time()
             with open(TRAIN_IDX_PATH, 'rb') as f:
@@ -262,6 +279,8 @@ class Data(object):
                 pickle.dump(bipartite_adj_matrix, f)
             with open(BIPARTITE_LAP_PATH, 'wb') as f:
                 pickle.dump(bipartite_lap_matrix, f)
+        bipartite_adj_matrix = bipartite_adj_matrix.to(self.device)
+        bipartite_lap_matrix = bipartite_lap_matrix.to(self.device)
         return bipartite_adj_matrix, bipartite_lap_matrix
     
     def get_author_paper_map(self) -> Dict[int, Set[int]]:
@@ -301,6 +320,8 @@ class Data(object):
         """
         author_path = self.generate_random_walk_author(self.random_walk_length)
         paper_path = self.generate_random_walk_paper(self.random_walk_length)
+        author_path = author_path.to(self.device)
+        paper_path = paper_path.to(self.device)
         return author_path, paper_path
     
     def generate_random_walk_author(self, t: int) -> Tensor:
@@ -319,6 +340,7 @@ class Data(object):
             cur = random.choice(list(self.author_author_map[pre]))
             random_walk_matrix[i, 0] = cur
             pre = cur
+        random_walk_matrix = random_walk_matrix.to(self.device)
         return random_walk_matrix
 
     def generate_random_walk_paper(self, t: int) -> Tensor:
@@ -337,6 +359,7 @@ class Data(object):
             cur = random.choice(list(self.paper_paper_map[pre]))
             random_walk_matrix[i, 0] = cur
             pre = cur
+        random_walk_matrix = random_walk_matrix.to(self.device)
         return random_walk_matrix
 
 if __name__ == '__main__':
