@@ -63,6 +63,7 @@ class RandomWalk(nn.Module):
             paper_embedding (Tensor): (M, d), where M is the number of paper
             author_selected_idx (Tensor): (T, 1), where T is the length of random walk (T << N)
             paper_selected_idx (Tensor): (T, 1), where T is the length of random walk (T << M)
+
         Returns:
             _type_: _description_
         """
