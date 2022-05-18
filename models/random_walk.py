@@ -82,8 +82,12 @@ class RandomWalk(nn.Module):
                                                      author_selected_embedding,
                                                      author_selected_embedding)
         else:
-            paper_selected_embedding = self.layer_paper(paper_selected_embedding)
-            author_selected_embedding = self.layer_author(author_selected_embedding)
+            paper_selected_embedding, (_, _) = self.layer_paper(paper_selected_embedding)
+            author_selected_embedding, (_, _) = self.layer_author(author_selected_embedding)
+            paper_selected_embedding = paper_selected_embedding[:, :, self.embed_dim * (self.stack_layers - 1):]
+            author_selected_embedding = author_selected_embedding[:, :, self.embed_dim * (self.stack_layers - 1):]
+            
+            assert list(paper_selected_embedding.shape) == [1, paper_selected_idx.shape[0], self.embed_dim]
         
         paper_selected_embedding = self.out_paper_norm(paper_selected_embedding).squeeze(0)
         author_selected_embedding = self.out_author_norm(author_selected_embedding).squeeze(0)
