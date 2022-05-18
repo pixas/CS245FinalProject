@@ -12,10 +12,11 @@ TRAIN_FILE_TXT = 'data/bipartite_train.txt'
 
 # TODO: load from file
 data_generator = Data(random_walk_length=16)
-pretrained_author_embedding = data_generator.author_embeddings
-pretrained_paper_embedding = data_generator.paper_embeddings
+device = torch.device("cuda:0" if torch.cuda.is_available() else 'cpu')
+pretrained_author_embedding = data_generator.author_embeddings.to(device)
+pretrained_paper_embedding = data_generator.paper_embeddings.to(device)
 
-def loss(author_embedding, paper_embedding, decay):
+def get_loss(author_embedding, paper_embedding, decay):
     author_embedding = F.normalize(author_embedding, p=2, dim=1)
     paper_embedding = F.normalize(paper_embedding, p=2, dim=1)
     score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
@@ -38,13 +39,16 @@ def train(model, optimizer, epoch):
     for epoch_idx in tqdm(range(epoch)):
         t1 = time.time()
         author_path, paper_path = data_generator.sample()
+        author_path = author_path.to(device)
+        paper_path = paper_path.to(device)
+        
         author_embedding, paper_embedding = model(
             pretrained_author_embedding, 
             pretrained_paper_embedding,
             author_path,
             paper_path
         )
-        loss, mf_loss, emb_loss, precision, recall = loss(author_embedding, paper_embedding, 0.1)
+        loss, mf_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, 0.1)
 
         optimizer.zero_grad()
         loss.backward()
@@ -63,19 +67,19 @@ def parse_args():
 if __name__ == '__main__':
     args = parse_args()
     model = General(
-        RWembed_dim=128,
+        RWembed_dim=512,
         stack_layers=2,
         dropoutRW=0.3,
         n_authors=data_generator.n_authors,
         n_papers=data_generator.n_papers,
         num_layers=2,
-        NGCFembed_dim=128,
+        NGCFembed_dim=512,
         dropoutNGCF=0.3,
-        paper_dim=128,
-        author_dim=128,
-        norm_adj=data_generator.bipartite_lap_matrix,
+        paper_dim=512,
+        author_dim=512,
+        norm_adj=data_generator.bipartite_lap_matrix.to(device),
         n_fold=4,
         args=args
-    )
+    ).to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
     train(model, optimizer, epoch=10)
