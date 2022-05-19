@@ -29,7 +29,7 @@ TRAIN_AUTHORS_PATH = 'data/train_authors.pkl'
 TRAIN_PAPERS_PATH = 'data/train_papers.pkl'
 
 class Data(object):
-    def __init__(self, batch_size: int, random_walk_length: int, device: str) -> None:
+    def __init__(self, batch_size: int, random_walk_length: int, device: str, train_ratio: float = 0.9) -> None:
         """Initializes internal Module state of Data.
         Args:
             batch_size: The batch size of the data.
@@ -41,6 +41,9 @@ class Data(object):
         self.device = device
         self.n_authors, self.n_papers = AUTHOR_CNT, PAPER_CNT
         self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
+        random.shuffle(self.train_index)
+        self.real_train_index = self.train_index[:int(len(self.train_index) * train_ratio)]
+        self.real_test_index = self.train_index[int(len(self.train_index) * train_ratio):]
         self.total_train_cnt = len(self.train_index)
         self.author_adj_matrix = self.get_author_adj_matrix()
         self.author_author_map = self.get_author_author_map()
@@ -50,7 +53,6 @@ class Data(object):
         self.author_paper_map = self.get_author_paper_map()
         self.bipartite_adj_matrix, self.bipartite_lap_matrix = self.get_bipartite_matrix()
         
-
         with open(AUTHOR_FEATURE_PATH, 'rb') as f:
             self.author_embeddings = pickle.load(f)
 
@@ -366,6 +368,70 @@ class Data(object):
         random_walk_matrix = random_walk_matrix.to(self.device)
         return random_walk_matrix
     
+    def sample_train(self) -> Tuple[List[List[int]], List[List[int]], List[int], List[int]]:
+        """ Sample a batch from the train dataset.
+        Returns:
+            pos_train_index (List[List[int]]): (batch_size // 2, 2)
+            neg_train_index (List[List[int]]): (batch_size // 2, 2)
+            train_authors (List[int])
+            train_papers (List[int])
+        """
+        pos_train_num = self.batch_size // 2
+        neg_train_num = self.batch_size - pos_train_num
+
+        # sample positive
+        pos_train_index = random.sample(self.real_train_index, pos_train_num)
+
+        # sample negative
+        author_list = list(range(self.n_authors))
+        neg_train_authors = random.sample(author_list, neg_train_num)
+        neg_train_index = []
+        for neg_train_author in neg_train_authors:
+            flag = False
+            while not flag:
+                random_paper = np.random.randint(low=AUTHOR_CNT, high=AUTHOR_CNT + self.n_papers, size=1)[0]
+                if random_paper not in self.author_paper_map[neg_train_author]:
+                    neg_train_index.append([neg_train_author, random_paper - AUTHOR_CNT])
+                    flag = True
+
+        # get authors and papers
+        train_authors = list(set([pos[0] for pos in pos_train_index] + [neg[0] for neg in neg_train_index]))
+        train_papers = list(set([pos[1] for pos in pos_train_index] + [neg[1] for neg in neg_train_index]))
+
+        return pos_train_index, neg_train_index, train_authors, train_papers
+    
+    def sample_test(self) -> Tuple[List[List[int]], List[List[int]], List[int], List[int]]:
+        """ Sample a batch from the test dataset.
+        Returns:
+            pos_test_index (List[List[int]]): (batch_size // 2, 2)
+            neg_test_index (List[List[int]]): (batch_size // 2, 2)
+            test_authors (List[int])
+            test_papers (List[int])
+        """
+        pos_test_num = self.batch_size // 2
+        neg_test_num = self.batch_size - pos_test_num
+
+        # sample positive
+        pos_test_index = random.sample(self.real_test_index, pos_test_num)
+
+        # sample negative
+        author_list = list(range(self.n_authors))
+        neg_test_authors = random.sample(author_list, neg_test_num)
+        neg_test_index = []
+        for neg_test_author in neg_test_authors:
+            flag = False
+            while not flag:
+                random_paper = np.random.randint(low=AUTHOR_CNT, high=AUTHOR_CNT + self.n_papers, size=1)[0]
+                if random_paper not in self.author_paper_map[neg_test_author]:
+                    neg_test_index.append([neg_test_author, random_paper - AUTHOR_CNT])
+                    flag = True
+
+        # get authors and papers
+        test_authors = list(set([pos[0] for pos in pos_test_index] + [neg[0] for neg in neg_test_index]))
+        test_papers = list(set([pos[1] for pos in pos_test_index] + [neg[1] for neg in neg_test_index]))
+
+        return pos_test_index, neg_test_index, test_authors, test_papers
+
     def get_train_test_indexes(self) -> Tuple[List[List[int]], List[List[int]],List[List[int]], List[List[int]], List[int], List[int], List[int], List[int]]:
         assert self.train_index != None
         t1 = time.time()
@@ -374,7 +440,7 @@ class Data(object):
         # pos_test_num = self.total_train_cnt - pos_train_num
         pos_train_num = self.batch_size // 2
         pos_test_num = self.batch_size // 2
-        
+
         # postive train/test
         real_train_pos_index = self.train_index[:pos_train_num]
         real_test_pos_index = self.train_index[-pos_test_num:]
@@ -436,7 +502,8 @@ if __name__ == '__main__':
     # print(data_generator.train_authors[:10])
     # print(len(data_generator.train_papers))
     # print(data_generator.train_papers[:10])
-    a, b, c, d, e, f, g, h = data_generator.get_train_test_indexes()
+    a, b, c, d = data_generator.sample_train()
+    e, f, g, h = data_generator.sample_test()
     print(a[:10])
     print(b[:10])
     print(c[:10])
@@ -454,3 +521,4 @@ if __name__ == '__main__':
     print(len(f))
     print(len(g))
     print(len(h))
+

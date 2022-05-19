@@ -82,26 +82,30 @@ def train(model, optimizer, args):
         t.set_description("Training")
         for epoch_idx in range(1, epoch + 1):
             t1 = time.time()
-            author_path, paper_path = data_generator.sample()
-            author_embedding, paper_embedding = model(
-                pretrained_author_embedding, 
-                pretrained_paper_embedding,
-                author_path,
-                paper_path
-            )
-            train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()
-            loss, mf_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, 0.1, train_pos_index, train_neg_index, train_authors, train_papers)
+            n_batch = len(data_generator.real_train_index) // (data_generator.batch_size // 2) + 1
+            for batch_idx in range(n_batch):
+                author_path, paper_path = data_generator.sample()
+                author_embedding, paper_embedding = model(
+                    pretrained_author_embedding, 
+                    pretrained_paper_embedding,
+                    author_path,
+                    paper_path
+                )
+                # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()
+                train_pos_index, train_neg_index, train_authors, train_papers = data_generator.sample_train()
+                loss, mf_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, 0.1, train_pos_index, train_neg_index, train_authors, train_papers)
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
+                t2 = time.time()
+                t.set_postfix({'epoch': f"{epoch_idx:>02d}", "loss": f"{loss:.4f}", 'mf_loss': f"{mf_loss:.4f}", 'emb_loss': f"{emb_loss:.4f}", "time": f"{t2-t1:.4f}s", 'precision': f"{precision:.4f}", 'recall': f"{recall:.4f}"})
+                
+                test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
+                test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, 0.1, test_pos_index, test_neg_index, test_authors, test_papers)
 
-            t2 = time.time()
-            t.set_postfix({'epoch': f"{epoch_idx:>02d}", "loss": f"{loss:.4f}", 'mf_loss': f"{mf_loss:.4f}", 'emb_loss': f"{emb_loss:.4f}", "time": f"{t2-t1:.4f}s", 'precision': f"{precision:.4f}", 'recall': f"{recall:.4f}"})
-            test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, 0.1, test_pos_index, test_neg_index, test_authors, test_papers)
-
-            t.update(1)
-            save_checkpoint(model, args.save_dir, args.keep_last_epochs, test_recall, epoch_idx)
+                t.update(1)
+                save_checkpoint(model, args.save_dir, args.keep_last_epochs, test_recall, epoch_idx)
 
 
 def parse_args():
