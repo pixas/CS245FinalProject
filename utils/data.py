@@ -405,10 +405,10 @@ class Data(object):
         print(f'Get negative train/test indexes, time cost: {t3 - t2: .3f}s')
 
         # get the set of authors and papers in train dataset and test dataset for regularization loss
-        real_train_authors = set([pos[0] for pos in real_train_pos_index] + [neg[0] for neg in real_train_neg_index])
-        real_train_papers = set([pos[1] for pos in real_train_pos_index] + [neg[1] for neg in real_train_neg_index])
-        real_test_authors = set([pos[0] for pos in real_test_pos_index] + [neg[0] for neg in real_test_neg_index])
-        real_test_papers = set([pos[1] for pos in real_test_pos_index] + [neg[1] for neg in real_test_neg_index])
+        real_train_authors = list(set([pos[0] for pos in real_train_pos_index] + [neg[0] for neg in real_train_neg_index]))
+        real_train_papers = list(set([pos[1] for pos in real_train_pos_index] + [neg[1] for neg in real_train_neg_index]))
+        real_test_authors = list(set([pos[0] for pos in real_test_pos_index] + [neg[0] for neg in real_test_neg_index]))
+        real_test_papers = list(set([pos[1] for pos in real_test_pos_index] + [neg[1] for neg in real_test_neg_index]))
         t4 = time.time()
         print(f'Get train/test authors and papers, time cost: {t4 - t3: .3f}s')
 
