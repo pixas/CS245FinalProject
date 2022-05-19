@@ -40,6 +40,8 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
         author_path,
         paper_path
     )
+    author_embedding = F.normalize(author_embedding, 2, 1)
+    paper_embedding = F.normalize(paper_embedding, 2, 1)
     f = open(os.path.join(output_dir, output_file_name), 'w')
     f.write("Index,Probability\n")
     for idx, (author, paper) in enumerate(test_array):
