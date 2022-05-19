@@ -22,7 +22,7 @@ def get_loss(author_embedding, paper_embedding, decay):
     author_embedding = F.normalize(author_embedding, p=2, dim=1)
     paper_embedding = F.normalize(paper_embedding, p=2, dim=1)
     score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
-    train_scores = score_matrix[list(zip(*data_generator.train_idx))]
+    train_scores = score_matrix[list(zip(*data_generator.train_index))]
     mf_loss = torch.sum(1 - train_scores)
 
     train_users = author_embedding[data_generator.train_authors]
@@ -33,7 +33,7 @@ def get_loss(author_embedding, paper_embedding, decay):
     pred_pos = torch.sum(score_matrix >= 0.5)
     true_pos = torch.sum(train_scores >= 0.5)
     precision = true_pos / pred_pos
-    recall = true_pos / len(data_generator.train_idx)
+    recall = true_pos / len(data_generator.train_index)
 
     return mf_loss + emb_loss, mf_loss, emb_loss, precision, recall
 
