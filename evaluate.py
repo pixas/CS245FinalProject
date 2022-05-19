@@ -50,7 +50,7 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
             result = torch.sum(author_embedding[author] * paper_embedding[paper])
             prob = (1 + result.item()) / 2.0
             f.write("{},{}\n".format(idx, prob))
-        t.update(1)
+            t.update(1)
     f.close()
         
         
