@@ -14,7 +14,7 @@ TRAIN_FILE_TXT = 'data/bipartite_train.txt'
 # TODO: load from file
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-data_generator = Data(random_walk_length=16,device=device)
+data_generator = Data(batch_size=512, random_walk_length=16,device=device)
 pretrained_author_embedding = data_generator.author_embeddings
 pretrained_paper_embedding = data_generator.paper_embeddings
 
