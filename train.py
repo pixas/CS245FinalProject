@@ -99,7 +99,7 @@ def train(model, optimizer, args):
                 optimizer.step()
 
 
-            t.set_postfix({'epoch': f"{epoch_idx:>02d}", "loss": f"{loss:.4f}", 'mf_loss': f"{mf_loss:.4f}", 'emb_loss': f"{emb_loss:.4f}", "time": f"{t2-t1:.4f}s", 'precision': f"{precision:.4f}", 'recall': f"{recall:.4f}"})
+            t.set_postfix({'epoch': f"{epoch_idx:>02d}", "loss": f"{loss:.4f}", 'mf_loss': f"{mf_loss:.4f}", 'emb_loss': f"{emb_loss:.4f}", 'precision': f"{precision:.4f}", 'recall': f"{recall:.4f}"})
             
             test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
             test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, 0.1, test_pos_index, test_neg_index, test_authors, test_papers)
