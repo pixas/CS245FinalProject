@@ -1,4 +1,3 @@
-from models.NGCF import NGCF
 from utils.data import AUTHOR_CNT, PAPER_CNT, Data
 import torch
 import torch.nn as nn

@@ -8,6 +8,7 @@ __pycache__/
 
 # Slurm script
 *.slurm
+log/
 
 # Distribution / packaging
 .Python
