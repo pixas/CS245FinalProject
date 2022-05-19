@@ -44,10 +44,13 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     paper_embedding = F.normalize(paper_embedding, 2, 1)
     f = open(os.path.join(output_dir, output_file_name), 'w')
     f.write("Index,Probability\n")
-    for idx, (author, paper) in enumerate(test_array):
-        result = torch.sum(author_embedding[author] * paper_embedding[paper])
-        prob = (1 + result.item()) / 2.0
-        f.write("{},{}\n".format(idx, prob))
+    with tqdm(total=len(test_array)) as t:
+        t.set_description("Evaluating:")
+        for idx, (author, paper) in enumerate(test_array):
+            result = torch.sum(author_embedding[author] * paper_embedding[paper])
+            prob = (1 + result.item()) / 2.0
+            f.write("{},{}\n".format(idx, prob))
+        t.update(1)
     f.close()
         
         
