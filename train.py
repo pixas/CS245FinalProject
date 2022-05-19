@@ -14,7 +14,7 @@ TRAIN_FILE_TXT = 'data/bipartite_train.txt'
 # TODO: load from file
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-data_generator = Data(batch_size=512, random_walk_length=16,device=device)
+data_generator = Data(batch_size=8192, random_walk_length=16,device=device)
 pretrained_author_embedding = data_generator.author_embeddings
 pretrained_paper_embedding = data_generator.paper_embeddings
 
@@ -106,34 +106,34 @@ def train(model, optimizer, args):
                 epoch_emb_loss += emb_loss
                 epoch_total_precision += precision
                 epoch_total_recall += recall
-                t.set_postfix({'batch': f"{batch_idx:>02d}", "loss": f"{loss:.4f}", 'mf_loss': f"{mf_loss:.4f}", 'emb_loss': f"{emb_loss:.4f}", 'precision': f"{precision:.4f}", 'recall': f"{recall:.4f}"})
+                t.set_postfix({"loss": f"{loss:.4f}", 'mf_loss': f"{mf_loss:.4f}", 'emb_loss': f"{emb_loss:.4f}", 'precision': f"{precision:.4f}", 'recall': f"{recall:.4f}"})
                 t.update(1)
         print(f'Train Epoch {epoch_idx} Loss: {epoch_loss / n_train_batch} MF Loss: {epoch_mf_loss / n_train_batch} Emb Loss: {epoch_emb_loss / n_train_batch} Precision: {epoch_total_precision / n_train_batch} Recall: {epoch_total_recall / n_train_batch}')
 
-        n_test_batch = len(data_generator.real_test_index) // (data_generator.batch_size // 2) + 1
-        with tqdm(total=n_test_batch) as t:
-            t.set_description(f"Test Epoch {epoch_idx}")
-            epoch_loss, epoch_mf_loss, epoch_emb_loss = 0, 0, 0
-            epoch_total_precision, epoch_total_recall = 0, 0
-            for batch_idx in range(1, n_train_batch + 1):
-                author_path, paper_path = data_generator.sample()
-                author_embedding, paper_embedding = model(
-                    pretrained_author_embedding, 
-                    pretrained_paper_embedding,
-                    author_path,
-                    paper_path
-                )
-                test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
-                test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, 0.1, test_pos_index, test_neg_index, test_authors, test_papers)
+        # n_test_batch = len(data_generator.real_test_index) // (data_generator.batch_size // 2) + 1
+        # with tqdm(total=n_test_batch) as t:
+        #     t.set_description(f"Test Epoch {epoch_idx}")
+        #     epoch_loss, epoch_mf_loss, epoch_emb_loss = 0, 0, 0
+        #     epoch_total_precision, epoch_total_recall = 0, 0
+        #     for batch_idx in range(1, n_train_batch + 1):
+        #         author_path, paper_path = data_generator.sample()
+        #         author_embedding, paper_embedding = model(
+        #             pretrained_author_embedding, 
+        #             pretrained_paper_embedding,
+        #             author_path,
+        #             paper_path
+        #         )
+        #         test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
+        #         test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, 0.1, test_pos_index, test_neg_index, test_authors, test_papers)
                 
-                epoch_loss += test_loss
-                epoch_mf_loss += test_mf_loss
-                epoch_emb_loss += test_emb_loss
-                epoch_total_precision += test_precision
-                epoch_total_recall += test_recall
-                t.update(1)
-        print(f'Test Epoch {epoch_idx} Loss: {epoch_loss / n_test_batch} MF Loss: {epoch_mf_loss / n_test_batch} Emb Loss: {epoch_emb_loss / n_test_batch} Precision: {epoch_total_precision / n_test_batch} Recall: {epoch_total_recall / n_test_batch}')
-        save_checkpoint(model, args.save_dir, args.keep_last_epochs, epoch_total_recall / n_test_batch, epoch_idx)
+        #         epoch_loss += test_loss
+        #         epoch_mf_loss += test_mf_loss
+        #         epoch_emb_loss += test_emb_loss
+        #         epoch_total_precision += test_precision
+        #         epoch_total_recall += test_recall
+        #         t.update(1)
+        # print(f'Test Epoch {epoch_idx} Loss: {epoch_loss / n_test_batch} MF Loss: {epoch_mf_loss / n_test_batch} Emb Loss: {epoch_emb_loss / n_test_batch} Precision: {epoch_total_precision / n_test_batch} Recall: {epoch_total_recall / n_test_batch}')
+        save_checkpoint(model, args.save_dir, args.keep_last_epochs, epoch_total_recall / n_train_batch, epoch_idx)
 
 
 def parse_args():
