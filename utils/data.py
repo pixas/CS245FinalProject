@@ -38,6 +38,7 @@ class Data(object):
         self.random_walk_length = random_walk_length
         self.n_authors, self.n_papers = AUTHOR_CNT, PAPER_CNT
         self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
+        self.total_train_cnt = len(self.train_index)
         self.author_adj_matrix = self.get_author_adj_matrix()
         self.author_author_map = self.get_author_author_map()
         self.paper_adj_matrix = self.get_paper_adj_matrix()
@@ -361,6 +362,41 @@ class Data(object):
             pre = cur
         random_walk_matrix = random_walk_matrix.to(self.device)
         return random_walk_matrix
+    
+    def get_train_test_indexes(self, train_ratio: int =0.9) -> Tuple[List[List[int]], List[int], List[int], List[List[int]], List[int], List[int]]:
+        assert self.train_index != None
+        random.shuffle(self.train_index)
+        pos_train_num = int(self.total_train_cnt * train_ratio)
+        pos_test_num = self.total_train_cnt - pos_train_num
+        # postive train/test
+        real_train_pos_index = self.train_index[:pos_train_num]
+        real_test_pos_index = self.train_index[-pos_test_num:]
+
+        # negative train/test
+        real_train_neg_index = []
+        real_test_neg_index = []
+        neg_train_authors = random.sample(range(self.n_authors), pos_train_num)
+        neg_test_authors = random.sample(range(self.n_authors), pos_test_num)
+        for neg_train_author in neg_train_authors:
+            neg_papers = list(set(range(AUTHOR_CNT, AUTHOR_CNT + self.n_papers)) - set(self.author_paper_map[neg_train_author]))
+            neg_papers_num = len(neg_papers)
+            random_idx = np.random.randint(low=0, high=neg_papers_num, size=1)[0]
+            neg_paper_idx = neg_papers[random_idx] - AUTHOR_CNT
+            real_train_neg_index.append([neg_train_author, neg_paper_idx])
+        for neg_test_author in neg_test_authors:
+            neg_papers = list(set(range(AUTHOR_CNT, AUTHOR_CNT + self.n_papers))) - set(self.author_paper_map[neg_test_author])
+            neg_papers_num = len(neg_papers)
+            random_idx = np.random.randint(low=0, high=neg_papers_num, size=1)[0]
+            neg_paper_idx = neg_papers[random_idx] - AUTHOR_CNT
+            real_test_neg_index.append([neg_test_author, neg_paper_idx])
+        
+        # get the set of authors and papers in train dataset and test dataset for regularization loss
+        real_train_authors = set([pos[0] for pos in real_train_pos_index] + [neg[0] for neg in real_train_neg_index])
+        real_train_papers = set([pos[1] for pos in real_train_pos_index] + [neg[1] for neg in real_train_neg_index])
+        real_test_authors = set([pos[0] for pos in real_test_pos_index] + [neg[0] for neg in real_test_neg_index])
+        real_test_papers = set([pos[1] for pos in real_test_pos_index] + [neg[1] for neg in real_test_neg_index])
+
+        return real_train_pos_index, real_train_neg_index, real_test_pos_index, real_test_neg_index, real_train_authors, real_train_papers, real_test_authors, real_test_papers
 
 if __name__ == '__main__':
     data_generator = Data(random_walk_length=16)
@@ -384,3 +420,4 @@ if __name__ == '__main__':
     print(data_generator.train_authors[:10])
     print(len(data_generator.train_papers))
     print(data_generator.train_papers[:10])
+    a, b, c, d, e, f, g, h = data_generator.get_train_test_indexes()
