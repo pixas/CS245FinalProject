@@ -23,14 +23,14 @@ def parse_args():
     parser.add_argument('--rw_dropout', type=float, default=0.3, help='random walk dropout rate')
     parser.add_argument('--NGCF_layers', type=int, default=3, help='ngcf layers')
     parser.add_argument('--ngcf_dropout', type=float, default=0.3, help='ngcf dropout rate')
-    
+    parser.add_argument('--rw_length', type=int, default=1024, help='random walk length')
     return parser.parse_args()
 
 # TODO: load from file
 args = parse_args()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-data_generator = Data(batch_size=args.batch_size, random_walk_length=16,device=device)
+data_generator = Data(batch_size=args.batch_size, random_walk_length=args.rw_length,device=device)
 pretrained_author_embedding = data_generator.author_embeddings
 pretrained_paper_embedding = data_generator.paper_embeddings
 
