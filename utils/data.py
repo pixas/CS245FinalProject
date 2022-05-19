@@ -29,13 +29,16 @@ TRAIN_AUTHORS_PATH = 'data/train_authors.pkl'
 TRAIN_PAPERS_PATH = 'data/train_papers.pkl'
 
 class Data(object):
-    def __init__(self, random_walk_length: int, device: str ='cpu') -> None:
+    def __init__(self, batch_size: int, random_walk_length: int, device: str) -> None:
         """Initializes internal Module state of Data.
         Args:
+            batch_size: The batch size of the data.
             random_walk_length: The length of random walk to use for training.
+            device: The device to use for training.
         """
-        self.device = device
+        self.batch_size = batch_size
         self.random_walk_length = random_walk_length
+        self.device = device
         self.n_authors, self.n_papers = AUTHOR_CNT, PAPER_CNT
         self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
         self.total_train_cnt = len(self.train_index)
@@ -363,12 +366,15 @@ class Data(object):
         random_walk_matrix = random_walk_matrix.to(self.device)
         return random_walk_matrix
     
-    def get_train_test_indexes(self, train_ratio: int =0.9) -> Tuple[List[List[int]], List[List[int]],List[List[int]], List[List[int]], List[int], List[int], List[int], List[int]]:
+    def get_train_test_indexes(self) -> Tuple[List[List[int]], List[List[int]],List[List[int]], List[List[int]], List[int], List[int], List[int], List[int]]:
         assert self.train_index != None
         t1 = time.time()
         random.shuffle(self.train_index)
-        pos_train_num = int(self.total_train_cnt * train_ratio)
-        pos_test_num = self.total_train_cnt - pos_train_num
+        # pos_train_num = int(self.total_train_cnt * train_ratio)
+        # pos_test_num = self.total_train_cnt - pos_train_num
+        pos_train_num = self.batch_size // 2
+        pos_test_num = self.batch_size // 2
+        
         # postive train/test
         real_train_pos_index = self.train_index[:pos_train_num]
         real_test_pos_index = self.train_index[-pos_test_num:]
@@ -409,7 +415,7 @@ class Data(object):
         return real_train_pos_index, real_train_neg_index, real_test_pos_index, real_test_neg_index, real_train_authors, real_train_papers, real_test_authors, real_test_papers
 
 if __name__ == '__main__':
-    data_generator = Data(random_walk_length=16)
+    data_generator = Data(batch_size=1024, random_walk_length=16, device='cpu')
     # print(data_generator.author_author_map[0])
     # print(data_generator.paper_paper_map[0])
     # print('--author--')
