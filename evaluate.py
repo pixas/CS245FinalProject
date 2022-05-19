@@ -16,7 +16,7 @@ TEST_FILE_TXT = 'data/bipartite_test_ann.txt'
 # TODO: load from file
 def parse_args():
     parser = argparse.ArgumentParser(description="Run General")
-    parser.add_argument('save_dir', type=str, default='checkpoints', help='Directory to save checkpoints')
+    parser.add_argument("path", type=str, default='checkpoints', help='checkpoint to reuse for evaluation')
     parser.add_argument('--module_type', nargs='?', default='LSTM', help='Module in coauthor and citation network')
     parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate.')
     parser.add_argument('--epoch', type=int, default=100, help='Number of epochs')
@@ -27,6 +27,7 @@ def parse_args():
     parser.add_argument('--rw_dropout', type=float, default=0.3, help='random walk dropout rate')
     parser.add_argument('--NGCF_layers', type=int, default=3, help='ngcf layers')
     parser.add_argument('--ngcf_dropout', type=float, default=0.3, help='ngcf dropout rate')
+    parser.add_argument('--output_dir', type=str, default='data', help='directory to save output csv files')
     
     return parser.parse_args()
 
@@ -38,6 +39,12 @@ pretrained_author_embedding = data_generator.author_embeddings
 pretrained_paper_embedding = data_generator.paper_embeddings
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(description="Run General")
+    parser.add_argument("path", type=str, default='checkpoints', help='checkpoint to reuse for evaluation')
+    parser.add_argument('--output_dir', type=str, default='data', help='directory to save output csv files')
+    parser.add_argument('--module_type', nargs='?', default='LSTM', help='Module in coauthor and citation network')
+    return parser.parse_args()
 
 @torch.no_grad()
 def evaluate_test_ann(model: General, test_file: str, output_dir: str):
