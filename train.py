@@ -19,22 +19,24 @@ pretrained_author_embedding = data_generator.author_embeddings
 pretrained_paper_embedding = data_generator.paper_embeddings
 
 
-def get_loss(author_embedding, paper_embedding, decay):
+def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, authors, papers):
     author_embedding = F.normalize(author_embedding, p=2, dim=1)
     paper_embedding = F.normalize(paper_embedding, p=2, dim=1)
     score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
-    train_scores = score_matrix[list(zip(*data_generator.train_index))]
-    mf_loss = torch.sum(1 - train_scores) / (len(train_scores))
-
-    train_users = author_embedding[data_generator.train_authors]
-    train_papers = paper_embedding[data_generator.train_papers]
-    regularizer = (torch.norm(train_users) ** 2 + torch.norm(train_papers) ** 2) / 2
-    emb_loss = decay * regularizer / (data_generator.train_author_cnt + data_generator.train_paper_cnt)
     
-    # pred_pos = torch.sum(score_matrix >= 0.5)
-    true_pos = torch.sum(train_scores >= 0)
-    precision = 0
-    recall = true_pos / len(data_generator.train_index)
+    pos_scores = score_matrix[list(zip(*pos_index))]
+    neg_scores = score_matrix[list(zip(*neg_index))]
+    mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
+
+    author_embeddings = author_embedding[authors]
+    paper_embeddings = paper_embedding[papers]
+    regularizer = (torch.norm(author_embeddings) ** 2 + torch.norm(paper_embeddings) ** 2) / 2
+    emb_loss = decay * regularizer / (len(authors) + len(papers))
+    
+    # pred_pos = torch.sum(score_matrix >= 0)
+    true_pos = torch.sum(pos_scores >= 0)
+    precision = torch.sum(pos_scores >= 0) / (torch.sum(pos_scores >= 0) + torch.sum(neg_scores >= 0))
+    recall = true_pos / len(pos_index)
 
     return mf_loss + emb_loss, mf_loss, emb_loss, precision, recall
 
@@ -87,11 +89,14 @@ def train(model, optimizer, args):
                 author_path,
                 paper_path
             )
-            loss, mf_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, 0.1)
+            train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_index()
+            loss, mf_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, 0.1, train_pos_index, train_neg_index, train_authors, train_papers)
 
             optimizer.zero_grad()
             loss.backward()
             optimizer.step()
+
+            test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, 0.1, test_pos_index, test_neg_index, test_authors, test_papers)
 
             t2 = time.time()
             t.set_postfix({'epoch': f"{epoch_idx:>02d}", "loss": f"{loss:.4f}", 'mf_loss': f"{mf_loss:.4f}", 'emb_loss': f"{emb_loss:.4f}", "time": f"{t2-t1:.4f}s", 'precision': f"{precision:.4f}", 'recall': f"{recall:.4f}"})
