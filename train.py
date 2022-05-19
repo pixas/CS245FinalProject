@@ -23,16 +23,16 @@ def get_loss(author_embedding, paper_embedding, decay):
     paper_embedding = F.normalize(paper_embedding, p=2, dim=1)
     score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
     train_scores = score_matrix[list(zip(*data_generator.train_index))]
-    mf_loss = torch.sum(1 - train_scores)
+    mf_loss = torch.sum(1 - train_scores) / (len(train_scores))
 
     train_users = author_embedding[data_generator.train_authors]
     train_papers = paper_embedding[data_generator.train_papers]
     regularizer = (torch.norm(train_users) ** 2 + torch.norm(train_papers) ** 2) / 2
     emb_loss = decay * regularizer / (data_generator.train_author_cnt + data_generator.train_paper_cnt)
     
-    pred_pos = torch.sum(score_matrix >= 0.5)
-    true_pos = torch.sum(train_scores >= 0.5)
-    precision = true_pos / pred_pos
+    # pred_pos = torch.sum(score_matrix >= 0.5)
+    true_pos = torch.sum(train_scores >= 0)
+    precision = 0
     recall = true_pos / len(data_generator.train_index)
 
     return mf_loss + emb_loss, mf_loss, emb_loss, precision, recall
@@ -61,6 +61,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Run General")
     parser.add_argument('--module_type', nargs='?', default='LSTM', help='Module in coauthor and citation network')
     parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate.')
+    parser.add_argument('--epoch', type=int, default=100, help='Number of epochs')
     return parser.parse_args()
 
 if __name__ == '__main__':
@@ -82,4 +83,4 @@ if __name__ == '__main__':
     )
     model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
-    train(model, optimizer, epoch=10)
+    train(model, optimizer, epoch=args.epoch)
