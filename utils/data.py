@@ -29,7 +29,7 @@ TRAIN_AUTHORS_PATH = 'data/train_authors.pkl'
 TRAIN_PAPERS_PATH = 'data/train_papers.pkl'
 
 class Data(object):
-    def __init__(self, random_walk_length: int,device) -> None:
+    def __init__(self, random_walk_length: int, device: str ='cpu') -> None:
         """Initializes internal Module state of Data.
         Args:
             random_walk_length: The length of random walk to use for training.
@@ -363,38 +363,48 @@ class Data(object):
         random_walk_matrix = random_walk_matrix.to(self.device)
         return random_walk_matrix
     
-    def get_train_test_indexes(self, train_ratio: int =0.9) -> Tuple[List[List[int]], List[int], List[int], List[List[int]], List[int], List[int]]:
+    def get_train_test_indexes(self, train_ratio: int =0.9) -> Tuple[List[List[int]], List[List[int]],List[List[int]], List[List[int]], List[int], List[int], List[int], List[int]]:
         assert self.train_index != None
+        t1 = time.time()
         random.shuffle(self.train_index)
         pos_train_num = int(self.total_train_cnt * train_ratio)
         pos_test_num = self.total_train_cnt - pos_train_num
         # postive train/test
         real_train_pos_index = self.train_index[:pos_train_num]
         real_test_pos_index = self.train_index[-pos_test_num:]
+        t2 = time.time()
+        print(f'Get positive train/test indexes, time cost: {t2 - t1: .3f}s')
 
         # negative train/test
         real_train_neg_index = []
         real_test_neg_index = []
-        neg_train_authors = random.sample(range(self.n_authors), pos_train_num)
-        neg_test_authors = random.sample(range(self.n_authors), pos_test_num)
+        author_list = list(range(self.n_authors))
+        neg_train_authors = [random.choice(author_list) for _ in range(pos_train_num)]
+        neg_test_authors = [random.choice(author_list) for _ in range(pos_test_num)]
         for neg_train_author in neg_train_authors:
-            neg_papers = list(set(range(AUTHOR_CNT, AUTHOR_CNT + self.n_papers)) - set(self.author_paper_map[neg_train_author]))
-            neg_papers_num = len(neg_papers)
-            random_idx = np.random.randint(low=0, high=neg_papers_num, size=1)[0]
-            neg_paper_idx = neg_papers[random_idx] - AUTHOR_CNT
-            real_train_neg_index.append([neg_train_author, neg_paper_idx])
+            flag = False
+            while not flag:
+                random_paper = np.random.randint(low=AUTHOR_CNT, high=AUTHOR_CNT + self.n_papers, size=1)[0]
+                if random_paper not in self.author_paper_map[neg_train_author]:
+                    real_train_neg_index.append([neg_train_author, random_paper - AUTHOR_CNT])
+                    flag = True
         for neg_test_author in neg_test_authors:
-            neg_papers = list(set(range(AUTHOR_CNT, AUTHOR_CNT + self.n_papers))) - set(self.author_paper_map[neg_test_author])
-            neg_papers_num = len(neg_papers)
-            random_idx = np.random.randint(low=0, high=neg_papers_num, size=1)[0]
-            neg_paper_idx = neg_papers[random_idx] - AUTHOR_CNT
-            real_test_neg_index.append([neg_test_author, neg_paper_idx])
-        
+            flag = False
+            while not flag:
+                random_paper = np.random.randint(low=AUTHOR_CNT, high=AUTHOR_CNT + self.n_papers, size=1)[0]
+                if random_paper not in self.author_paper_map[neg_test_author]:
+                    real_test_neg_index.append([neg_test_author, random_paper - AUTHOR_CNT])
+                    flag = True
+        t3 = time.time()
+        print(f'Get negative train/test indexes, time cost: {t3 - t2: .3f}s')
+
         # get the set of authors and papers in train dataset and test dataset for regularization loss
         real_train_authors = set([pos[0] for pos in real_train_pos_index] + [neg[0] for neg in real_train_neg_index])
         real_train_papers = set([pos[1] for pos in real_train_pos_index] + [neg[1] for neg in real_train_neg_index])
         real_test_authors = set([pos[0] for pos in real_test_pos_index] + [neg[0] for neg in real_test_neg_index])
         real_test_papers = set([pos[1] for pos in real_test_pos_index] + [neg[1] for neg in real_test_neg_index])
+        t4 = time.time()
+        print(f'Get train/test authors and papers, time cost: {t4 - t3: .3f}s')
 
         return real_train_pos_index, real_train_neg_index, real_test_pos_index, real_test_neg_index, real_train_authors, real_train_papers, real_test_authors, real_test_papers
 
@@ -402,22 +412,39 @@ if __name__ == '__main__':
     data_generator = Data(random_walk_length=16)
     # print(data_generator.author_author_map[0])
     # print(data_generator.paper_paper_map[0])
-    print('--author--')
-    path = data_generator.sample()[0]
-    for i in path:
-        print(i, data_generator.author_author_map[int(i)])
-    print('--paper--')
-    path = data_generator.sample()[1]
-    for i in path:
-        print(i, data_generator.paper_paper_map[int(i)])
-    print(data_generator.train_index[:10])
+    # print('--author--')
+    # path = data_generator.sample()[0]
+    # for i in path:
+    #     print(i, data_generator.author_author_map[int(i)])
+    # print('--paper--')
+    # path = data_generator.sample()[1]
+    # for i in path:
+    #     print(i, data_generator.paper_paper_map[int(i)])
+    # print(data_generator.train_index[:10])
     # print(data_generator.author_adj_matrix[0])
     # print(data_generator.paper_adj_matrix[0])
     # print(data_generator.bipartite_adj_matrix[0])
-    print(len(data_generator.train_index))
-    print(data_generator.train_index[:10])
-    print(len(data_generator.train_authors))
-    print(data_generator.train_authors[:10])
-    print(len(data_generator.train_papers))
-    print(data_generator.train_papers[:10])
+    # print(len(data_generator.train_index))
+    # print(data_generator.train_index[:10])
+    # print(len(data_generator.train_authors))
+    # print(data_generator.train_authors[:10])
+    # print(len(data_generator.train_papers))
+    # print(data_generator.train_papers[:10])
     a, b, c, d, e, f, g, h = data_generator.get_train_test_indexes()
+    print(a[:10])
+    print(b[:10])
+    print(c[:10])
+    print(d[:10])
+    print(list(e)[:10])
+    print(list(f)[:10])
+    print(list(g)[:10])
+    print(list(h)[:10])
+    print('-------------')
+    print(len(a))
+    print(len(b))
+    print(len(c))
+    print(len(d))
+    print(len(e))
+    print(len(f))
+    print(len(g))
+    print(len(h))
