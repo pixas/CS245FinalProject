@@ -106,9 +106,9 @@ def train(model, optimizer, args):
                 epoch_emb_loss += emb_loss
                 epoch_total_precision += precision
                 epoch_total_recall += recall
+                t.set_postfix({'batch': f"{batch_idx:>02d}", "loss": f"{loss:.4f}", 'mf_loss': f"{mf_loss:.4f}", 'emb_loss': f"{emb_loss:.4f}", 'precision': f"{precision:.4f}", 'recall': f"{recall:.4f}"})
                 t.update(1)
         print(f'Train Epoch {epoch_idx} Loss: {epoch_loss / n_train_batch} MF Loss: {epoch_mf_loss / n_train_batch} Emb Loss: {epoch_emb_loss / n_train_batch} Precision: {epoch_total_precision / n_train_batch} Recall: {epoch_total_recall / n_train_batch}')
-        # t.set_postfix({'epoch': f"{epoch_idx:>02d}", "loss": f"{loss:.4f}", 'mf_loss': f"{mf_loss:.4f}", 'emb_loss': f"{emb_loss:.4f}", 'precision': f"{precision:.4f}", 'recall': f"{recall:.4f}"})
 
         n_test_batch = len(data_generator.real_test_index) // (data_generator.batch_size // 2) + 1
         with tqdm(total=n_test_batch) as t:
@@ -133,7 +133,7 @@ def train(model, optimizer, args):
                 epoch_total_recall += test_recall
                 t.update(1)
         print(f'Test Epoch {epoch_idx} Loss: {epoch_loss / n_test_batch} MF Loss: {epoch_mf_loss / n_test_batch} Emb Loss: {epoch_emb_loss / n_test_batch} Precision: {epoch_total_precision / n_test_batch} Recall: {epoch_total_recall / n_test_batch}')
-        save_checkpoint(model, args.save_dir, args.keep_last_epochs, test_recall, epoch_idx)
+        save_checkpoint(model, args.save_dir, args.keep_last_epochs, epoch_total_recall / n_test_batch, epoch_idx)
 
 
 def parse_args():
