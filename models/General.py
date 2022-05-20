@@ -35,7 +35,7 @@ class General(nn.Module):
         """
         super(General, self).__init__()
         self.embed_layer = nn.Embedding(n_authors, author_dim)
-        self.RW = RandomWalk(RWembed_dim, stack_layers, dropoutRW, args)
+        # self.RW = RandomWalk(RWembed_dim, stack_layers, dropoutRW, args)
         self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
                  num_layers, NGCFembed_dim, paper_dim, author_dim,
                  norm_adj, layer_size_list)
@@ -55,7 +55,7 @@ class General(nn.Module):
             _type_: _description_
         """
         author_embedding = self.embed_layer(author_embedding)
-        author_embedding, paper_embedding = self.RW(author_embedding, paper_embedding, author_selected_idx, paper_selected_idx)
+        # author_embedding, paper_embedding = self.RW(author_embedding, paper_embedding, author_selected_idx, paper_selected_idx)
         author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
         
         return author_embedding_new, paper_embedding_new

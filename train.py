@@ -114,7 +114,8 @@ def train(model, optimizer, args):
             epoch_total_precision, epoch_total_recall = 0, 0
 
             for batch_idx in range(1, n_train_batch + 1):
-                author_path, paper_path = data_generator.sample()
+                # author_path, paper_path = data_generator.sample()
+                author_path = paper_path = []
                 author_embedding, paper_embedding = model(
                     pretrained_author_embedding, 
                     pretrained_paper_embedding,
