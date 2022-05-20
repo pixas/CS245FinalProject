@@ -26,7 +26,7 @@ model_parameter = torch.load(args.path)
 train_args = model_parameter['args']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-data_generator = Data(batch_size=train_args.batch_size, random_walk_length=args.rw_length,device=device)
+data_generator = Data(batch_size=train_args.batch_size, random_walk_length=train_args.rw_length,device=device)
 # pretrained_author_embedding = data_generator.author_embeddings
 pretrained_author_embedding = torch.arange(0, data_generator.n_authors, 1, device=device)
 pretrained_paper_embedding = data_generator.paper_embeddings
@@ -65,21 +65,21 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
 if __name__ == '__main__':
     
     model = General(
-        Pa_layers=args.pa_layers,
-        Au_layers=args.au_layers,
+        Pa_layers=train_args.pa_layers,
+        Au_layers=train_args.au_layers,
         paper_adj=data_generator.paper_adj_matrix,
         author_adj=data_generator.author_adj_matrix,
-        Paperdropout=args.gnn_dropout,
-        Authordropout=args.gnn_dropout,
+        Paperdropout=train_args.gnn_dropout,
+        Authordropout=train_args.gnn_dropout,
         n_authors=data_generator.n_authors,
         n_papers=data_generator.n_papers,
-        num_layers=args.NGCF_layers,
-        NGCFembed_dim=args.embed_dim,
-        dropoutNGCF=args.ngcf_dropout,
-        paper_dim=args.embed_dim,
-        author_dim=args.embed_dim,
+        num_layers=train_args.NGCF_layers,
+        NGCFembed_dim=train_args.embed_dim,
+        dropoutNGCF=train_args.ngcf_dropout,
+        paper_dim=train_args.embed_dim,
+        author_dim=train_args.embed_dim,
         norm_adj=data_generator.bipartite_lap_matrix,
-        layer_size_list=args.layer_size_list,
+        layer_size_list=train_args.layer_size_list,
         args=args
     )
     model.to(device)
