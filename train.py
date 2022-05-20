@@ -30,16 +30,17 @@ def parse_args():
     parser.add_argument('--au_layers', type=int, default=2, help='author GNN layers')
     parser.add_argument('--decay', type=float, default=0.1, help='regularizer term coefficient')
     parser.add_argument('--gnn_dropout', type=float, default=0.2, help='GNN layer dropout rate')
+    parser.add_argument('--datapath', type=str, default='data', help='data path')
     return parser.parse_args()
 
 # TODO: load from file
 args = parse_args()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-data_generator = Data(batch_size=args.batch_size, random_walk_length=args.rw_length,device=device)
+data_generator = Data(batch_size=args.batch_size, random_walk_length=args.rw_length, device=device, path=args.datapath)
 # pretrained_author_embedding = data_generator.author_embeddings
 pretrained_author_embedding = torch.arange(0, data_generator.n_authors, 1, device=device)
-pretrained_paper_embedding = data_generator.paper_embeddings
+pretrained_paper_embedding = F.normalize(data_generator.paper_embeddings, p=2, dim=1)
 
 
 def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index, neg_index, authors, papers):

@@ -7,39 +7,45 @@ from torch_sparse import SparseTensor
 from torch import Tensor 
 from typing import Dict, List, Set, Tuple
 
-# Better to be included in a global config file
-AUTHOR_GRAPH_PATH = 'data/author_file_ann.txt'
-PAPER_GRAPH_PATH = 'data/paper_file_ann.txt'
-BIPARTITE_GRAPH_TRAIN_PATH = 'data/bipartite_train_ann.txt'
-BIPARTITE_GRAPH_TEST_PATH = 'data/bipartite_test_ann.txt'
-AUTHOR_FEATURE_PATH = 'data/author_vec.pkl'
-PAPER_FEATURE_PATH = 'data/feature.pkl'
-AUTHOR_CNT = 6611
-PAPER_CNT = 79937
-
-AUTHOR_ADJ_PATH = 'data/author_adj.pkl'
-AUTHOR_AUTHOR_MAP_PATH = 'data/author_author_map.pkl'
-PAPER_ADJ_PATH = 'data/paper_adj.pkl'
-PAPER_PAPER_MAP_PATH = 'data/paper_paper_map.pkl'
-BIPARTITE_ADJ_PATH = 'data/bipartite_adj.pkl'
-BIPARTITE_LAP_PATH = 'data/bipartite_lap.pkl'
-AUTHOR_PAPER_MAP_PATH = 'data/author_paper_map.pkl'
-TRAIN_IDX_PATH = 'data/train_idx.pkl'
-TRAIN_AUTHORS_PATH = 'data/train_authors.pkl'
-TRAIN_PAPERS_PATH = 'data/train_papers.pkl'
-
 class Data(object):
-    def __init__(self, batch_size: int, random_walk_length: int, device: str, train_ratio: float = 0.9) -> None:
+    def __init__(self, batch_size: int, random_walk_length: int, device: str, train_ratio: float = 0.9, path = 'path') -> None:
         """Initializes internal Module state of Data.
         Args:
             batch_size: The batch size of the data.
             random_walk_length: The length of random walk to use for training.
             device: The device to use for training.
+            train_ratio: The ratio of training data.
+            path: The path to the data.
         """
         self.batch_size = batch_size
         self.random_walk_length = random_walk_length
         self.device = device
-        self.n_authors, self.n_papers = AUTHOR_CNT, PAPER_CNT
+
+        # data path begin #
+        self.author_cnt = 6611
+        self.paper_cnt = 79937
+
+        self.author_graph_path = f'{path}/author_file_ann.txt'
+        self.paper_graph_path = f'{path}/paper_file_ann.txt'
+        self.bipartite_graph_train_path = f'{path}/bipartite_train_ann.txt'
+        self.bipartite_graph_test_path = f'{path}/bipartite_test_ann.txt'
+        self.author_feature_path = f'{path}/author_vec.pkl'
+        self.paper_feature_path = f'{path}/feature.pkl'
+
+        self.author_adj_path = f'{path}/author_adj.pkl'
+        self.author_author_map_path = f'{path}/author_author_map.pkl'
+        self.paper_adj_path = f'{path}/paper_adj.pkl'
+        self.paper_paper_map_path = f'{path}/paper_paper_map.pkl'
+        self.bipartite_adj_path = f'{path}/bipartite_adj.pkl'
+        self.bipartite_lap_path = f'{path}/bipartite_lap.pkl'
+
+        self.author_paper_map_path = f'{path}/author_paper_map.pkl'
+        self.train_idx_path = f'{path}/train_idx.pkl'
+        self.train_authors_path = f'{path}/train_authors.pkl'
+        self.train_papers_path = f'{path}/train_papers.pkl'
+        # data path end #
+
+        self.n_authors, self.n_papers = self.author_cnt, self.paper_cnt
         self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
         random.shuffle(self.train_index)
         self.real_train_index = self.train_index[:int(len(self.train_index) * train_ratio)]
@@ -52,11 +58,13 @@ class Data(object):
         # self.paper_embeddings = self.get_paper_embeddings()
         self.author_paper_map = self.get_author_paper_map()
         self.bipartite_adj_matrix, self.bipartite_lap_matrix = self.get_bipartite_matrix()
+
         
-        with open(AUTHOR_FEATURE_PATH, 'rb') as f:
+        
+        with open(self.author_feature_path, 'rb') as f:
             self.author_embeddings = pickle.load(f)
 
-        with open(PAPER_FEATURE_PATH, 'rb') as f:
+        with open(self.paper_feature_path, 'rb') as f:
             self.paper_embeddings = pickle.load(f)
 
         self.paper_embeddings = self.paper_embeddings.to(self.device)
@@ -73,20 +81,20 @@ class Data(object):
         """
         try:
             t1 = time.time()
-            with open(AUTHOR_AUTHOR_MAP_PATH, 'rb') as f:
+            with open(self.author_author_map_path, 'rb') as f:
                 author_author_map = pickle.load(f)
-            print(f'Load author-author map from {AUTHOR_AUTHOR_MAP_PATH}, time cost: {time.time() - t1: .3f}s')
+            print(f'Load author-author map from {self.author_author_map_path}, time cost: {time.time() - t1: .3f}s')
         except:
             t1 = time.time()
-            with open(AUTHOR_GRAPH_PATH, 'r') as f:
+            with open(self.author_graph_path, 'r') as f:
                 lines = f.readlines()
-                author_author_map = {author: set() for author in range(AUTHOR_CNT)}
+                author_author_map = {author: set() for author in range(self.author_cnt)}
                 for line in lines:
                     for author, coauthor in [line.strip().split(' ')]:
                         author_author_map[int(author)].add(int(coauthor))
                         author_author_map[int(coauthor)].add(int(author))
             print(f'Build author-author map, time cost: {time.time() - t1: .3f}s')
-            with open(AUTHOR_AUTHOR_MAP_PATH, 'wb') as f:
+            with open(self.author_author_map_path, 'wb') as f:
                 pickle.dump(author_author_map, f)
         return author_author_map
 
@@ -97,14 +105,14 @@ class Data(object):
         """
         try:
             t1 = time.time()
-            with open(AUTHOR_ADJ_PATH, 'rb') as f:
+            with open(self.author_adj_path, 'rb') as f:
                 author_adj_matrix = pickle.load(f)
-            print(f'Load author adjacency matrix from {AUTHOR_ADJ_PATH}, time cost: {time.time() - t1: .3f}s')
+            print(f'Load author adjacency matrix from {self.author_adj_path}, time cost: {time.time() - t1: .3f}s')
         except:
             t1 = time.time()
-            with open(AUTHOR_GRAPH_PATH, 'r') as f:
+            with open(self.author_graph_path, 'r') as f:
                 lines = f.readlines()
-                author_author_map = {author: set() for author in range(AUTHOR_CNT)}
+                author_author_map = {author: set() for author in range(self.author_cnt)}
                 for line in lines:
                     for author, coauthor in [line.strip().split(' ')]:
                         author_author_map[int(author)].add(int(coauthor))
@@ -116,7 +124,7 @@ class Data(object):
                 v = [1] * len(index)
                 author_adj_matrix = torch.sparse_coo_tensor(list(zip(*index)), v, (self.n_authors, self.n_authors))
             print(f'Build author adjacency matrix, time cost: {time.time() - t1: .3f}s')
-            with open(AUTHOR_ADJ_PATH, 'wb') as f:
+            with open(self.author_adj_path, 'wb') as f:
                 pickle.dump(author_adj_matrix, f)
         author_adj_matrix = author_adj_matrix.to(self.device,dtype=torch.float)
         return author_adj_matrix
@@ -128,24 +136,24 @@ class Data(object):
         Example:
             paper 1 has cited paper 10, 11
             return {1: {10, 11}, 10: {1}, 11: {1}}
-        Note: all paper indexes are in range [0, PAPER_CNT)
+        Note: all paper indexes are in range [0, self.paper_cnt)
         """
         try:
             t1 = time.time()
-            with open(PAPER_PAPER_MAP_PATH, 'rb') as f:
+            with open(self.paper_paper_map_path, 'rb') as f:
                 paper_paper_map = pickle.load(f)
-            print(f'Load paper-paper map from {PAPER_PAPER_MAP_PATH}, time cost: {time.time() - t1: .3f}s')
+            print(f'Load paper-paper map from {self.paper_paper_map_path}, time cost: {time.time() - t1: .3f}s')
         except:
             t1 = time.time()
-            with open(PAPER_GRAPH_PATH, 'r') as f:
+            with open(self.paper_graph_path, 'r') as f:
                 lines = f.readlines()
-                paper_paper_map = {paper: set() for paper in range(PAPER_CNT)}
+                paper_paper_map = {paper: set() for paper in range(self.paper_cnt)}
                 for line in lines:
                     for paper, cited_paper in [line.strip().split(' ')]:
                         paper_paper_map[int(paper)].add(int(cited_paper))
                         paper_paper_map[int(cited_paper)].add(int(paper))
             print(f'Build paper-paper map, time cost: {time.time() - t1: .3f}s')
-            with open(PAPER_PAPER_MAP_PATH, 'wb') as f:
+            with open(self.paper_paper_map_path, 'wb') as f:
                 pickle.dump(paper_paper_map, f)
         return paper_paper_map
 
@@ -156,14 +164,14 @@ class Data(object):
         """
         try:
             t1 = time.time()
-            with open(PAPER_ADJ_PATH, 'rb') as f:
+            with open(self.paper_adj_path, 'rb') as f:
                 paper_adj_matrix = pickle.load(f)
-            print(f'Load paper adjacency matrix from {PAPER_ADJ_PATH}, time cost: {time.time() - t1: .3f}s')
+            print(f'Load paper adjacency matrix from {self.paper_adj_path}, time cost: {time.time() - t1: .3f}s')
         except:
             t1 = time.time()
-            with open(PAPER_GRAPH_PATH, 'r') as f:
+            with open(self.paper_graph_path, 'r') as f:
                 lines = f.readlines()
-                paper_paper_map = {paper: set() for paper in range(PAPER_CNT)}
+                paper_paper_map = {paper: set() for paper in range(self.paper_cnt)}
                 for line in lines:
                     for paper, cited_paper in [line.strip().split(' ')]:
                         paper_paper_map[int(paper)].add(int(cited_paper))
@@ -175,7 +183,7 @@ class Data(object):
                 v = [1] * len(index)
                 paper_adj_matrix = torch.sparse_coo_tensor(list(zip(*index)), v, (self.n_papers, self.n_papers))
             print(f'Build paper adjacency matrix, time cost: {time.time() - t1: .3f}s')
-            with open(PAPER_ADJ_PATH, 'wb') as f:
+            with open(self.paper_adj_path, 'wb') as f:
                 pickle.dump(paper_adj_matrix, f)
         paper_adj_matrix = paper_adj_matrix.to(self.device,dtype=torch.float)
         return paper_adj_matrix
@@ -188,9 +196,9 @@ class Data(object):
         paper_embs = []
         t1 = time.time()
         
-        with open(PAPER_FEATURE_PATH, 'rb') as f:
+        with open(self.paper_feature_path, 'rb') as f:
             paper_embs = pickle.load(f)
-        print(f'Load paper embeddings from {PAPER_FEATURE_PATH}, time cost: {time.time() - t1: .3f}s')
+        print(f'Load paper embeddings from {self.paper_feature_path}, time cost: {time.time() - t1: .3f}s')
         
         # papar_embs = papar_embs.to(self.device)
         return paper_embs
@@ -202,7 +210,7 @@ class Data(object):
             train_author_idx(List[int]): All authors id in training set.
             train_paper_idx(List[int]): All papers id in training set.
         Note:
-            all paper indexes are in range [0, PAPER_CNT)
+            all paper indexes are in range [0, self.paper_cnt)
         Example:
             train_idx = [[1, 2], [3, 4], [5, 6]]
             train_author_idx = [1, 3, 5]
@@ -210,16 +218,16 @@ class Data(object):
         """
         try:
             t1 = time.time()
-            with open(TRAIN_IDX_PATH, 'rb') as f:
+            with open(self.train_idx_path, 'rb') as f:
                 train_idx = pickle.load(f)
-            with open(TRAIN_AUTHORS_PATH, 'rb') as f:
+            with open(self.train_authors_path, 'rb') as f:
                 train_authors = pickle.load(f)
-            with open(TRAIN_PAPERS_PATH, 'rb') as f:
+            with open(self.train_papers_path, 'rb') as f:
                 train_papers = pickle.load(f)
-            print(f'Load training data from {TRAIN_IDX_PATH}, time cost: {time.time() - t1: .3f}s')
+            print(f'Load training data from {self.train_idx_path}, time cost: {time.time() - t1: .3f}s')
         except:
             t1 = time.time()
-            with open(BIPARTITE_GRAPH_TRAIN_PATH, 'r') as f:
+            with open(self.bipartite_graph_train_path, 'r') as f:
                 lines = f.readlines()
                 train_authors = set()
                 train_papers = set()
@@ -232,11 +240,11 @@ class Data(object):
                 train_authors = list(train_authors)
                 train_papers = list(train_papers)
             print(f'Build training data, time cost: {time.time() - t1: .3f}s')
-            with open(TRAIN_IDX_PATH, 'wb') as f:
+            with open(self.train_idx_path, 'wb') as f:
                 pickle.dump(train_idx, f)
-            with open(TRAIN_AUTHORS_PATH, 'wb') as f:
+            with open(self.train_authors_path, 'wb') as f:
                 pickle.dump(train_authors, f)
-            with open(TRAIN_PAPERS_PATH, 'wb') as f:
+            with open(self.train_papers_path, 'wb') as f:
                 pickle.dump(train_papers, f)
         self.train_author_cnt = len(train_authors)
         self.train_paper_cnt = len(train_papers)
@@ -251,18 +259,18 @@ class Data(object):
         bipartite_lap_index = []
         try:
             t1 = time.time()
-            with open(TRAIN_IDX_PATH, 'rb') as f:
+            with open(self.train_idx_path, 'rb') as f:
                 self.train_index = pickle.load(f)
-            with open(BIPARTITE_ADJ_PATH, 'rb') as f:
+            with open(self.bipartite_adj_path, 'rb') as f:
                 bipartite_adj_matrix = pickle.load(f)
-            with open(BIPARTITE_LAP_PATH, 'rb') as f:
+            with open(self.bipartite_lap_path, 'rb') as f:
                 bipartite_lap_matrix = pickle.load(f)
-            print(f'Load train indexed from {TRAIN_IDX_PATH}')
-            print(f'Load bipartite adjacency matrix and Laplacian matrix from {BIPARTITE_ADJ_PATH} and {BIPARTITE_LAP_PATH}, time cost: {time.time() - t1: .3f}s')
+            print(f'Load train indexed from {self.train_idx_path}')
+            print(f'Load bipartite adjacency matrix and Laplacian matrix from {self.bipartite_adj_path} and {self.bipartite_lap_path}, time cost: {time.time() - t1: .3f}s')
         except:
             t1 = time.time()
             assert self.author_paper_map != None
-            degree_value = [0] * (AUTHOR_CNT + PAPER_CNT)
+            degree_value = [0] * (self.author_cnt + self.paper_cnt)
             index = []
             for author, papers in self.author_paper_map.items():
                 degree_value[author] = len(papers)
@@ -271,19 +279,19 @@ class Data(object):
                     degree_value[paper] += 1
             # adjacency matrix
             v = [1] * len(index)
-            bipartite_adj_matrix = torch.sparse_coo_tensor(list(zip(*index)), v, (AUTHOR_CNT + PAPER_CNT, PAPER_CNT + AUTHOR_CNT))
+            bipartite_adj_matrix = torch.sparse_coo_tensor(list(zip(*index)), v, (self.author_cnt + self.paper_cnt, self.paper_cnt + self.author_cnt))
 
             # Laplacian matrix
             bipartite_lap_index = index
             bipartite_lap_value = [1 / (degree_value[author] * degree_value[paper]) ** (1 / 2) for author, paper in index]
-            bipartite_lap_matrix = torch.sparse_coo_tensor(list(zip(*bipartite_lap_index)), bipartite_lap_value, (AUTHOR_CNT + PAPER_CNT, PAPER_CNT + AUTHOR_CNT))
+            bipartite_lap_matrix = torch.sparse_coo_tensor(list(zip(*bipartite_lap_index)), bipartite_lap_value, (self.author_cnt + self.paper_cnt, self.paper_cnt + self.author_cnt))
             print(f'Build train indexes.')
             print(f'Build bipartite adjacency matrix and Laplacian matrix, time cost: {time.time() - t1: .3f}s')
-            with open(TRAIN_IDX_PATH, 'wb') as f:
+            with open(self.train_idx_path, 'wb') as f:
                 pickle.dump(self.train_index, f)
-            with open(BIPARTITE_ADJ_PATH, 'wb') as f:
+            with open(self.bipartite_adj_path, 'wb') as f:
                 pickle.dump(bipartite_adj_matrix, f)
-            with open(BIPARTITE_LAP_PATH, 'wb') as f:
+            with open(self.bipartite_lap_path, 'wb') as f:
                 pickle.dump(bipartite_lap_matrix, f)
         bipartite_adj_matrix = bipartite_adj_matrix.to(self.device)
         bipartite_lap_matrix = bipartite_lap_matrix.to(self.device)
@@ -297,23 +305,23 @@ class Data(object):
             author 1 has cited paper 10, 11
             author 2 has cited paper 10, 12
             return {1: [10, 11], 2: [10, 12]}
-        Note: all paper indexes have been added AUTHOR_CNT
+        Note: all paper indexes have been added self.author_cnt
         """
         try:
             t1 = time.time()
-            with open(AUTHOR_PAPER_MAP_PATH, 'rb') as f:
+            with open(self.author_paper_map_path, 'rb') as f:
                 author_paper_map = pickle.load(f)
-            print(f'Load author-paper map from {AUTHOR_PAPER_MAP_PATH}, time cost: {time.time() - t1: .3f}s')
+            print(f'Load author-paper map from {self.author_paper_map_path}, time cost: {time.time() - t1: .3f}s')
         except:
             t1 = time.time()
-            with open(BIPARTITE_GRAPH_TRAIN_PATH, 'r') as f:
+            with open(self.bipartite_graph_train_path, 'r') as f:
                 lines = f.readlines()
-                author_paper_map = {author: set() for author in range(AUTHOR_CNT)}
+                author_paper_map = {author: set() for author in range(self.author_cnt)}
                 for line in lines:
                     for author, paper in [line.strip().split(' ')]:
-                        author_paper_map[int(author)].add(int(paper) + AUTHOR_CNT)
+                        author_paper_map[int(author)].add(int(paper) + self.author_cnt)
             print(f'Build author-paper map, time cost: {time.time() - t1: .3f}s')
-            with open(AUTHOR_PAPER_MAP_PATH, 'wb') as f:
+            with open(self.author_paper_map_path, 'wb') as f:
                 pickle.dump(author_paper_map, f)
         return author_paper_map
 
@@ -336,10 +344,10 @@ class Data(object):
         Args:
             t (int): the length of random walk (t << N).
         Returns:
-            random_walk_matrix (Tensor): (AUTHOR_CNT, t)
+            random_walk_matrix (Tensor): (self.author_cnt, t)
         """
         random_walk_matrix = torch.zeros(size=(t, 1), dtype=torch.int64)
-        start_author = random.choice(range(0, AUTHOR_CNT))
+        start_author = random.choice(range(0, self.author_cnt))
         random_walk_matrix[0, 0] = start_author
         pre = start_author
         for i in range(1, t):
@@ -358,7 +366,7 @@ class Data(object):
             random_walk_matrix (Tensor): (t, 1)
         """
         random_walk_matrix = torch.zeros(size=(t, 1), dtype=torch.int64)
-        start_paper = random.choice(range(0, PAPER_CNT))
+        start_paper = random.choice(range(0, self.paper_cnt))
         random_walk_matrix[0, 0] = start_paper
         pre = start_paper
         for i in range(1, t):
@@ -389,9 +397,9 @@ class Data(object):
         for neg_train_author in neg_train_authors:
             flag = False
             while not flag:
-                random_paper = np.random.randint(low=AUTHOR_CNT, high=AUTHOR_CNT + self.n_papers, size=1)[0]
+                random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.n_papers, size=1)[0]
                 if random_paper not in self.author_paper_map[neg_train_author]:
-                    neg_train_index.append([neg_train_author, random_paper - AUTHOR_CNT])
+                    neg_train_index.append([neg_train_author, random_paper - self.author_cnt])
                     flag = True
 
         # get authors and papers
@@ -421,9 +429,9 @@ class Data(object):
         for neg_test_author in neg_test_authors:
             flag = False
             while not flag:
-                random_paper = np.random.randint(low=AUTHOR_CNT, high=AUTHOR_CNT + self.n_papers, size=1)[0]
+                random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.n_papers, size=1)[0]
                 if random_paper not in self.author_paper_map[neg_test_author]:
-                    neg_test_index.append([neg_test_author, random_paper - AUTHOR_CNT])
+                    neg_test_index.append([neg_test_author, random_paper - self.author_cnt])
                     flag = True
 
         # get authors and papers
@@ -456,16 +464,16 @@ class Data(object):
         for neg_train_author in neg_train_authors:
             flag = False
             while not flag:
-                random_paper = np.random.randint(low=AUTHOR_CNT, high=AUTHOR_CNT + self.n_papers, size=1)[0]
+                random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.n_papers, size=1)[0]
                 if random_paper not in self.author_paper_map[neg_train_author]:
-                    real_train_neg_index.append([neg_train_author, random_paper - AUTHOR_CNT])
+                    real_train_neg_index.append([neg_train_author, random_paper - self.author_cnt])
                     flag = True
         for neg_test_author in neg_test_authors:
             flag = False
             while not flag:
-                random_paper = np.random.randint(low=AUTHOR_CNT, high=AUTHOR_CNT + self.n_papers, size=1)[0]
+                random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.n_papers, size=1)[0]
                 if random_paper not in self.author_paper_map[neg_test_author]:
-                    real_test_neg_index.append([neg_test_author, random_paper - AUTHOR_CNT])
+                    real_test_neg_index.append([neg_test_author, random_paper - self.author_cnt])
                     flag = True
         t3 = time.time()
         print(f'Get negative train/test indexes, time cost: {t3 - t2: .3f}s')
