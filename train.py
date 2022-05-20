@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument('--au_layers', type=int, default=2, help='author GNN layers')
     parser.add_argument('--decay', type=float, default=0.1, help='regularizer term coefficient')
     parser.add_argument('--gnn_dropout', type=float, default=0.2, help='GNN layer dropout rate')
-    parser.add_argument('--datapath', type=str, default='data/', help='data path')
+    parser.add_argument('--datapath', type=str, default='data', help='data path')
     return parser.parse_args()
 
 # TODO: load from file
