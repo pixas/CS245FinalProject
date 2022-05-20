@@ -60,7 +60,7 @@ data/13_ShuyangJiang.csv
 # Translations
 *.mo
 *.pot
-
+*.sh
 # Django stuff:
 *.log
 local_settings.py
