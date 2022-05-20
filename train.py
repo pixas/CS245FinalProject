@@ -46,13 +46,16 @@ pretrained_paper_embedding = data_generator.paper_embeddings
 def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, authors, papers):
     author_embeddings = author_embedding[authors]
     paper_embeddings = paper_embedding[papers]
-    author_embedding = F.normalize(author_embedding, p=2, dim=1)
-    paper_embedding = F.normalize(paper_embedding, p=2, dim=1)
+    # author_embedding = F.normalize(author_embedding, p=2, dim=1)
+    # paper_embedding = F.normalize(paper_embedding, p=2, dim=1)
+
     score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
+    score_matrix = F.sigmoid(score_matrix)
     
     pos_scores = score_matrix[list(zip(*pos_index))]
     neg_scores = score_matrix[list(zip(*neg_index))]
-    mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
+    # mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
+    mf_loss = (torch.sum(torch.log(pos_scores)) + torch.sum(torch.log(1 - neg_scores))) / (len(pos_index) + len(neg_index))
 
     regularizer = (torch.norm(author_embeddings) ** 2 + torch.norm(paper_embeddings) ** 2) / 2
     emb_loss = decay * regularizer / (len(authors) + len(papers))
