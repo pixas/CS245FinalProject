@@ -42,16 +42,22 @@ pretrained_author_embedding = torch.arange(0, data_generator.n_authors, 1, devic
 pretrained_paper_embedding = data_generator.paper_embeddings
 
 
-def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, authors, papers):
+def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index, neg_index, authors, papers):
     author_embeddings = author_embedding[authors]
     paper_embeddings = paper_embedding[papers]
     author_embedding = F.normalize(author_embedding, p=2, dim=1)
     paper_embedding = F.normalize(paper_embedding, p=2, dim=1)
-    score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
+    # score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
     
-    pos_scores = score_matrix[list(zip(*pos_index))]
-    neg_scores = score_matrix[list(zip(*neg_index))]
-    mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
+    fetch_pos_index = list(zip(*pos_index))
+    fetch_neg_index = list(zip(*neg_index))
+    pos_scores = interact_prob[fetch_pos_index[0], fetch_pos_index[1]]
+    neg_scores = interact_prob[fetch_neg_index[0], fetch_neg_index[1]]
+
+    mf_loss = F.nll_loss(pos_scores, torch.ones((pos_scores.shape[0]), device=interact_prob.device)) + \
+        F.nll_loss(neg_scores, torch.zeros((pos_scores.shape[0]), device=interact_prob.device))
+    
+    # mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
 
     regularizer = (torch.norm(author_embeddings) ** 2 + torch.norm(paper_embeddings) ** 2) / 2
     emb_loss = decay * regularizer / (len(authors) + len(papers))
@@ -111,13 +117,13 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
         epoch_total_precision, epoch_total_recall = 0, 0
         for batch_idx in range(1, n_test_batch + 1):
             author_path = paper_path = []
-            author_embedding, paper_embedding = model(
+            author_embedding, paper_embedding, interact_prob = model(
                 pretrained_author_embedding, 
                 pretrained_paper_embedding,
 
             )
             test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
-            test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
+            test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
             
             epoch_loss += test_loss
             epoch_mf_loss += test_mf_loss
@@ -138,7 +144,7 @@ def train(model, optimizer, args):
     begin_epoch = 1
     if os.path.exists(args.save_dir):
         ckpt_dir = os.listdir(args.save_dir)
-        if ckpt_dir:
+        if 'checkpoint_last.pt' in ckpt_dir:
             last_model_dict = torch.load(os.path.join(args.save_dir, 'checkpoint_last.pt'))
             parameter_dict = last_model_dict['model_state']
             begin_epoch = last_model_dict['epoch'] + 1

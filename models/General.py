@@ -59,7 +59,8 @@ class General(nn.Module):
         self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
                  num_layers, NGCFembed_dim, paper_dim, author_dim,
                  norm_adj, layer_size_list)
-    
+        self.classifier = nn.Linear(sum([paper_dim] + layer_size_list), 2)
+        self.output_layer = nn.LogSoftmax(2)
     
     def forward(self, author_embedding: Tensor,
                 paper_embedding: Tensor):
@@ -76,5 +77,7 @@ class General(nn.Module):
         author_embedding = self.au_GNN(author_embedding,self.author_adj)
         paper_embedding = self.pa_GNN(paper_embedding,self.paper_adj)
         author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
-        
-        return author_embedding_new, paper_embedding_new
+        interact_embed = torch.einsum("nd,md->nmd", author_embedding_new, paper_embedding_new)
+        interact_embed = self.classifier(interact_embed)
+        interact_prob = self.output_layer(interact_embed)
+        return author_embedding_new, paper_embedding_new, interact_prob
