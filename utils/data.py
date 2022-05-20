@@ -118,7 +118,7 @@ class Data(object):
             print(f'Build author adjacency matrix, time cost: {time.time() - t1: .3f}s')
             with open(AUTHOR_ADJ_PATH, 'wb') as f:
                 pickle.dump(author_adj_matrix, f)
-        author_adj_matrix = author_adj_matrix.to(self.device)
+        author_adj_matrix = author_adj_matrix.to(self.device,dtype=torch.float)
         return author_adj_matrix
 
     def get_paper_paper_map(self) -> Dict[int, Set[int]]:
@@ -177,7 +177,7 @@ class Data(object):
             print(f'Build paper adjacency matrix, time cost: {time.time() - t1: .3f}s')
             with open(PAPER_ADJ_PATH, 'wb') as f:
                 pickle.dump(paper_adj_matrix, f)
-        paper_adj_matrix = paper_adj_matrix.to(self.device)
+        paper_adj_matrix = paper_adj_matrix.to(self.device,dtype=torch.float)
         return paper_adj_matrix
 
     def get_paper_embeddings(self) -> torch.Tensor:

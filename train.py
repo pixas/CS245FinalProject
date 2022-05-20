@@ -26,6 +26,9 @@ def parse_args():
     parser.add_argument('--ngcf_dropout', type=float, default=0.3, help='ngcf dropout rate')
     parser.add_argument('--rw_length', type=int, default=512, help='random walk length')
     parser.add_argument('--layer_size_list', type=List[int], default=[512, 768, 1024], help='increase of receptive field')
+    parser.add_argument('--pa_layers', type=int, default=2, help='paper GNN layers')
+    parser.add_argument('--au_layers', type=int, default=2, help='author GNN layers')
+    parser.add_argument('--gnn_dropout', type=float, default=0.2, help='GNN layer dropout rate')
     return parser.parse_args()
 
 # TODO: load from file
@@ -39,6 +42,8 @@ pretrained_paper_embedding = data_generator.paper_embeddings
 
 
 def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, authors, papers):
+    author_embeddings = author_embedding[authors]
+    paper_embeddings = paper_embedding[papers]
     author_embedding = F.normalize(author_embedding, p=2, dim=1)
     paper_embedding = F.normalize(paper_embedding, p=2, dim=1)
     score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
@@ -47,8 +52,6 @@ def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, aut
     neg_scores = score_matrix[list(zip(*neg_index))]
     mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
 
-    author_embeddings = author_embedding[authors]
-    paper_embeddings = paper_embedding[papers]
     regularizer = (torch.norm(author_embeddings) ** 2 + torch.norm(paper_embeddings) ** 2) / 2
     emb_loss = decay * regularizer / (len(authors) + len(papers))
     
@@ -100,6 +103,7 @@ def save_checkpoint(model: General, args: argparse.ArgumentParser, save_metric: 
 
 def train(model, optimizer, args):
     epoch = args.epoch
+    begin_epoch = 1
     if os.path.exists(args.save_dir):
         ckpt_dir = os.listdir(args.save_dir)
         if ckpt_dir:
@@ -122,8 +126,6 @@ def train(model, optimizer, args):
                 author_embedding, paper_embedding = model(
                     pretrained_author_embedding, 
                     pretrained_paper_embedding,
-                    author_path,
-                    paper_path
                 )
                 # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()
                 train_pos_index, train_neg_index, train_authors, train_papers = data_generator.sample_train()
@@ -173,9 +175,12 @@ def train(model, optimizer, args):
 if __name__ == '__main__':
     
     model = General(
-        RWembed_dim=args.embed_dim,
-        stack_layers=args.rw_stack_layers,
-        dropoutRW=args.rw_dropout,
+        Pa_layers=args.pa_layers,
+        Au_layers=args.au_layers,
+        paper_adj=data_generator.paper_adj_matrix,
+        author_adj=data_generator.author_adj_matrix,
+        Paperdropout=args.gnn_dropout,
+        Authordropout=args.gnn_dropout,
         n_authors=data_generator.n_authors,
         n_papers=data_generator.n_papers,
         num_layers=args.NGCF_layers,
