@@ -94,7 +94,15 @@ def save_checkpoint(model: General, save_dir: str, keep_last_epochs: int, save_m
 
 def train(model, optimizer, args):
     epoch = args.epoch
-    for epoch_idx in range(1, epoch + 1):
+    ckpt_dir = os.listdir(args.save_dir)
+    if ckpt_dir:
+        last_model_dict = torch.load(os.path.join(args.save_dir, 'checkpoint_last.pt'))
+        parameter_dict = last_model_dict['model_state']
+        begin_epoch = last_model_dict['epoch']
+        model.load_state_dict(parameter_dict)
+    else:
+        begin_epoch = 1
+    for epoch_idx in range(begin_epoch, epoch + 1):
         n_train_batch = len(data_generator.real_train_index) // (data_generator.batch_size // 2) + 1
         with tqdm(total=n_train_batch) as t:
             t.set_description(f"Train Epoch {epoch_idx}")
