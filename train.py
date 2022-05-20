@@ -165,13 +165,13 @@ def train(model, optimizer, args):
             for batch_idx in range(1, n_train_batch + 1):
                 # author_path, paper_path = data_generator.sample()
                 author_path = paper_path = []
-                author_embedding, paper_embedding = model(
+                author_embedding, paper_embedding, interact_prob = model(
                     pretrained_author_embedding, 
                     pretrained_paper_embedding,
                 )
                 # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()
                 train_pos_index, train_neg_index, train_authors, train_papers = data_generator.sample_train()
-                loss, mf_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, args.decay, train_pos_index, train_neg_index, train_authors, train_papers)
+                loss, mf_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, train_pos_index, train_neg_index, train_authors, train_papers)
                 
                 optimizer.zero_grad()
                 loss.backward()
