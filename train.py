@@ -55,7 +55,7 @@ def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index,
     pos_scores = interact_prob[fetch_pos_index[0], fetch_pos_index[1]]
     neg_scores = interact_prob[fetch_neg_index[0], fetch_neg_index[1]]
 
-    mf_loss = torch.where(pos_scores < 1e-3, 1e3 * 1, torch.log(pos_scores)) + torch.sum(neg_scores)
+    mf_loss = (torch.sum(1-pos_scores) + torch.sum(neg_scores)) / (len(pos_index) + len(neg_index))
     # mf_loss = F.nll_loss(pos_scores, torch.ones((pos_scores.shape[0]), device=interact_prob.device)) + \
     #     F.nll_loss(neg_scores, torch.zeros((pos_scores.shape[0]), device=interact_prob.device))
     
