@@ -55,8 +55,9 @@ def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index,
     pos_scores = interact_prob[fetch_pos_index[0], fetch_pos_index[1]]
     neg_scores = interact_prob[fetch_neg_index[0], fetch_neg_index[1]]
 
-    mf_loss = F.nll_loss(pos_scores, torch.ones((pos_scores.shape[0]), device=interact_prob.device)) + \
-        F.nll_loss(neg_scores, torch.zeros((pos_scores.shape[0]), device=interact_prob.device))
+    mf_loss = torch.where(pos_scores < 1e-3, 1e3 * 1, torch.log(pos_scores)) + torch.sum(neg_scores)
+    # mf_loss = F.nll_loss(pos_scores, torch.ones((pos_scores.shape[0]), device=interact_prob.device)) + \
+    #     F.nll_loss(neg_scores, torch.zeros((pos_scores.shape[0]), device=interact_prob.device))
     
     # mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
 
@@ -64,10 +65,10 @@ def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index,
     emb_loss = decay * regularizer / (len(authors) + len(papers))
     
     # pred_pos = torch.sum(score_matrix >= 0)
-    pos_samples = pos_scores.argmax(1)
-    neg_samples = neg_scores.argmax(1)
+    pos_samples = pos_scores >= 0.5
+    neg_samples = neg_scores < 0.5
     true_pos = torch.sum(pos_samples)
-    precision = torch.sum(pos_samples) / (torch.sum(pos_samples) + (neg_samples.shape[0] - torch.sum(neg_samples)))
+    precision = torch.sum(pos_samples) / (torch.sum(pos_samples) + torch.sum(neg_samples))
     recall = true_pos / len(pos_index)
 
     return mf_loss + emb_loss, mf_loss, emb_loss, precision, recall
