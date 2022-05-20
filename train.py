@@ -167,7 +167,7 @@ def train(model, optimizer, args):
         #         epoch_total_recall += test_recall
         #         t.update(1)
         # print(f'Test Epoch {epoch_idx} Loss: {epoch_loss / n_test_batch} MF Loss: {epoch_mf_loss / n_test_batch} Emb Loss: {epoch_emb_loss / n_test_batch} Precision: {epoch_total_precision / n_test_batch} Recall: {epoch_total_recall / n_test_batch}')
-        save_checkpoint(model, args.save_dir, args.keep_last_epochs, epoch_total_recall / n_train_batch, epoch_idx)
+        save_checkpoint(model, args, epoch_total_recall / n_train_batch, epoch_idx)
 
 
 
