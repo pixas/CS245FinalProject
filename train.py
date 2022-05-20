@@ -98,7 +98,7 @@ def train(model, optimizer, args):
     if ckpt_dir:
         last_model_dict = torch.load(os.path.join(args.save_dir, 'checkpoint_last.pt'))
         parameter_dict = last_model_dict['model_state']
-        begin_epoch = last_model_dict['epoch']
+        begin_epoch = last_model_dict['epoch'] + 1
         model.load_state_dict(parameter_dict)
     else:
         begin_epoch = 1
