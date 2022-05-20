@@ -175,7 +175,7 @@ def train(model, optimizer, args):
                 t.set_postfix({"loss": f"{loss:.4f}", 'mf_loss': f"{mf_loss:.4f}", 'emb_loss': f"{emb_loss:.4f}", 'precision': f"{precision:.4f}", 'recall': f"{recall:.4f}"})
                 t.update(1)
         print(f'Train Epoch {epoch_idx:.4f} Loss: {epoch_loss / n_train_batch:.4f} MF Loss: {epoch_mf_loss / n_train_batch:.4f} Emb Loss: {epoch_emb_loss / n_train_batch:.4f} Precision: {epoch_total_precision / n_train_batch:.4f} Recall: {epoch_total_recall / n_train_batch:.4f}')
-        test_loss, test_mf_loss, test_total_precision, test_total_recall = test_one_epoch(model, args, epoch)
+        test_loss, test_mf_loss, test_total_precision, test_total_recall = test_one_epoch(model, args, epoch_idx)
         print(f'Test Epoch {epoch_idx:.4f} Loss: {test_loss:.4f} MF Loss: {test_mf_loss:.4f} Precision: {test_total_precision:.4f} Recall: {test_total_recall:.4f}')
         # n_test_batch = len(data_generator.real_test_index) // (data_generator.batch_size // 2) + 1
         # with tqdm(total=n_test_batch) as t:
