@@ -42,7 +42,8 @@ data/paper_file_ann.txt
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
-
+checkpoints/
+13_ShuyangJiang.csv
 # Unit test / coverage reports
 htmlcov/
 .tox/

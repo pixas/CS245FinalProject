@@ -17,19 +17,8 @@ TEST_FILE_TXT = 'data/bipartite_test_ann.txt'
 def parse_args():
     parser = argparse.ArgumentParser(description="Run General")
     parser.add_argument("path", type=str, default='checkpoints', help='checkpoint to reuse for evaluation')
-    parser.add_argument('--module_type', nargs='?', default='LSTM', help='Module in coauthor and citation network')
-    parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate.')
-    parser.add_argument('--epoch', type=int, default=100, help='Number of epochs')
-    parser.add_argument('--keep_last_epochs', type=int, default=5, help='only keep last epochs')
-    parser.add_argument('--batch_size', type=int, default=8192, help='batch samples for positive and negative samples')
-    parser.add_argument('--embed_dim', type=int, default=512, help='embedding dimension')
-    parser.add_argument('--rw_stack_layers', type=int, default=2, help='random walk module stack layers')
-    parser.add_argument('--rw_dropout', type=float, default=0.3, help='random walk dropout rate')
-    parser.add_argument('--NGCF_layers', type=int, default=3, help='ngcf layers')
-    parser.add_argument('--ngcf_dropout', type=float, default=0.3, help='ngcf dropout rate')
     parser.add_argument('--output_dir', type=str, default='data', help='directory to save output csv files')
-    parser.add_argument('--rw_length', type=int, default=1024, help='random walk length')
-    parser.add_argument('--layer_size_list', type=List[int], default=[512, 768, 1024], help='increase of receptive field')
+
     return parser.parse_args()
 
 args = parse_args()
@@ -72,24 +61,24 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
 
 
 if __name__ == '__main__':
-    
+    model_parameter = torch.load(args.path)
+    train_args = model_parameter['args']
     model = General(
-        RWembed_dim=args.embed_dim,
-        stack_layers=args.rw_stack_layers,
-        dropoutRW=args.rw_dropout,
+        RWembed_dim=train_args.embed_dim,
+        stack_layers=train_args.rw_stack_layers,
+        dropoutRW=train_args.rw_dropout,
         n_authors=data_generator.n_authors,
         n_papers=data_generator.n_papers,
-        num_layers=args.NGCF_layers,
-        NGCFembed_dim=args.embed_dim,
-        dropoutNGCF=args.ngcf_dropout,
-        paper_dim=args.embed_dim,
-        author_dim=args.embed_dim,
+        num_layers=train_args.NGCF_layers,
+        NGCFembed_dim=train_args.embed_dim,
+        dropoutNGCF=train_args.ngcf_dropout,
+        paper_dim=train_args.embed_dim,
+        author_dim=train_args.embed_dim,
         norm_adj=data_generator.bipartite_lap_matrix,
-        layer_size_list=args.layer_size_list,
-        args=args
+        layer_size_list=train_args.layer_size_list,
+        args=train_args
     )
     model.to(device)
-    model_parameter = torch.load(args.path)
     model.load_state_dict(model_parameter['model_state'])
     evaluate_test_ann(model, TEST_FILE_TXT, args.output_dir)
     
