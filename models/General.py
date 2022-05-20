@@ -1,3 +1,4 @@
+from typing import List
 import torch 
 import torch.nn as nn
 import torch.nn.functional as F 
@@ -12,7 +13,7 @@ class General(nn.Module):
                 n_authors: int, n_papers: int, 
                 num_layers: int, NGCFembed_dim: int, dropoutNGCF:float,
                 paper_dim: int, author_dim: int,
-                norm_adj: SparseTensor, n_fold: int,
+                norm_adj: SparseTensor, layer_size_list: List[int],
                 args: ArgumentParser) -> None:
         """initializes General model
         Args:
@@ -36,7 +37,7 @@ class General(nn.Module):
         self.RW = RandomWalk(RWembed_dim, stack_layers, dropoutRW, args)
         self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
                  num_layers, NGCFembed_dim, paper_dim, author_dim,
-                 norm_adj, n_fold)
+                 norm_adj, layer_size_list)
     
     
     def forward(self, author_embedding: Tensor,

@@ -1,5 +1,6 @@
 import argparse
 import os
+from typing import List
 from models.General import General
 import time
 import torch
@@ -23,7 +24,8 @@ def parse_args():
     parser.add_argument('--rw_dropout', type=float, default=0.3, help='random walk dropout rate')
     parser.add_argument('--NGCF_layers', type=int, default=3, help='ngcf layers')
     parser.add_argument('--ngcf_dropout', type=float, default=0.3, help='ngcf dropout rate')
-    parser.add_argument('--rw_length', type=int, default=1024, help='random walk length')
+    parser.add_argument('--rw_length', type=int, default=512, help='random walk length')
+    parser.add_argument('--layer_size_list', type=List[int], default=[512, 768, 1024], help='increase of receptive field')
     return parser.parse_args()
 
 # TODO: load from file

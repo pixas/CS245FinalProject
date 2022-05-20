@@ -4,11 +4,12 @@ import torch.nn as nn
 from torch import Tensor
 from torch_sparse import SparseTensor
 import torch.nn.functional as F
+from typing import List 
 
 class NGCF(nn.Module):
     def __init__(self, n_authors: int, n_papers: int, dropout: float, 
                  num_layers: int, embed_dim: int, paper_dim: int, author_dim: int,
-                 norm_adj: SparseTensor, n_fold: int) -> None:
+                 norm_adj: SparseTensor, layer_size_list: List[int]) -> None:
         """Initializes internal Module state of NGCF.
 
         Args:
@@ -25,16 +26,16 @@ class NGCF(nn.Module):
         super(NGCF, self).__init__()
         self.n_authors = n_authors
         self.n_papers = n_papers
-        self.n_fold = n_fold 
+
         self.num_layers = num_layers
-        
+        self.layer_size = [embed_dim] + layer_size_list
         self.dropout = dropout
         self.embed_dim = embed_dim
         self.paper_dim = paper_dim
         self.author_dim = author_dim
         self.norm_adj = norm_adj
         
-        
+        assert len(self.layer_size) == self.num_layers + 1
         assert author_dim == paper_dim == embed_dim, "Input embeddings must have the same shape"
          
         self.weights_1 = nn.ModuleList([])
@@ -42,8 +43,8 @@ class NGCF(nn.Module):
         self.relu1 = nn.ModuleList([])
         self.relu2 = nn.ModuleList([])
         for i in range(num_layers):
-            self.weights_1.append(nn.Linear(embed_dim, embed_dim))
-            self.weights_2.append(nn.Linear(embed_dim, embed_dim))
+            self.weights_1.append(nn.Linear(self.layer_size[i], self.layer_size[i + 1]))
+            self.weights_2.append(nn.Linear(self.layer_size[i], self.layer_size[i + 1]))
             self.relu1.append(nn.LeakyReLU())
             self.relu2.append(nn.LeakyReLU())
             
@@ -54,25 +55,7 @@ class NGCF(nn.Module):
         
         for i, module in enumerate(self.weights_2):
             nn.init.xavier_normal_(module.weight, gain=2 ** -0.5)
-    
-    def _split_A_hat(self, X: SparseTensor):
-        A_fold_hat = []
-        device = X.device
-        print(X)
-        fold_len = (self.n_authors + self.n_papers) // self.n_fold
-        for i_fold in range(self.n_fold):
-            start = i_fold * fold_len
-            if i_fold == self.n_fold -1:
-                end = self.n_authors + self.n_papers
-            else:
-                end = (i_fold + 1) * fold_len
-
-            idx = torch.arange(start, end, dtype=torch.int64).to(device)
-            # idx = torch.linspace(start, end, 1, dtype=torch.int64).to(device)
-
-            A_fold_hat.append(X.index_select(0, idx))
-
-        return A_fold_hat    
+      
     
     def forward(self, author_embedding: Tensor, 
                 paper_embedding: Tensor):
