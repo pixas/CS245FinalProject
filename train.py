@@ -55,6 +55,7 @@ def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, aut
     pos_scores = score_matrix[list(zip(*pos_index))]
     neg_scores = score_matrix[list(zip(*neg_index))]
     with open('data/log.txt', 'w') as f:
+	
         f.write(str(score_matrix[:10]) + '\n')
         f.write(str(pos_scores[:10]) + '\n')
         f.write(str(neg_scores[:10]) + '\n')
