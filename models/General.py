@@ -34,6 +34,7 @@ class General(nn.Module):
             n_fold (int): cannot multiply (N+M, N+M) with (N+M, d) directly; split into several (N+M/n_fold, N+M) and (N+M, d) and concatenate them together in the end.
         """
         super(General, self).__init__()
+        self.embed_layer = nn.Embedding(n_authors, author_dim)
         self.RW = RandomWalk(RWembed_dim, stack_layers, dropoutRW, args)
         self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
                  num_layers, NGCFembed_dim, paper_dim, author_dim,
@@ -53,6 +54,7 @@ class General(nn.Module):
         Returns:
             _type_: _description_
         """
+        author_embedding = self.embed_layer(author_embedding)
         author_embedding, paper_embedding = self.RW(author_embedding, paper_embedding, author_selected_idx, paper_selected_idx)
         author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
         
