@@ -54,6 +54,8 @@ def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, aut
     
     pos_scores = score_matrix[list(zip(*pos_index))]
     neg_scores = score_matrix[list(zip(*neg_index))]
+    print(pos_scores[:10])
+    print(neg_scores[:10])
     # mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
     mf_loss = (torch.sum(torch.log(pos_scores)) + torch.sum(torch.log(1 - neg_scores))) / (len(pos_index) + len(neg_index))
 
