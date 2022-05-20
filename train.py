@@ -64,8 +64,10 @@ def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index,
     emb_loss = decay * regularizer / (len(authors) + len(papers))
     
     # pred_pos = torch.sum(score_matrix >= 0)
-    true_pos = torch.sum(pos_scores >= 0)
-    precision = torch.sum(pos_scores >= 0) / (torch.sum(pos_scores >= 0) + torch.sum(neg_scores >= 0))
+    pos_samples = pos_scores.argmax(1)
+    neg_samples = neg_scores.argmax(1)
+    true_pos = torch.sum(pos_samples)
+    precision = torch.sum(pos_samples) / (torch.sum(pos_samples) + (neg_samples.shape[0] - torch.sum(neg_samples)))
     recall = true_pos / len(pos_index)
 
     return mf_loss + emb_loss, mf_loss, emb_loss, precision, recall
