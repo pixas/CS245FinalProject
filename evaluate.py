@@ -39,12 +39,6 @@ pretrained_author_embedding = data_generator.author_embeddings
 pretrained_paper_embedding = data_generator.paper_embeddings
 
 
-def parse_args():
-    parser = argparse.ArgumentParser(description="Run General")
-    parser.add_argument("path", type=str, default='checkpoints', help='checkpoint to reuse for evaluation')
-    parser.add_argument('--output_dir', type=str, default='data', help='directory to save output csv files')
-    parser.add_argument('--module_type', nargs='?', default='LSTM', help='Module in coauthor and citation network')
-    return parser.parse_args()
 
 @torch.no_grad()
 def evaluate_test_ann(model: General, test_file: str, output_dir: str):
