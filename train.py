@@ -51,7 +51,7 @@ def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, aut
     
     init_score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
     norm_matrix = torch.maximum(torch.norm(author_embedding, p=2, dim=1, keepdim=True) @ torch.norm(paper_embedding, p=2, dim=1, keepdim=True).T, 1e-8)
-    score_matrix = F.sigmoid(init_score_matrix / norm_matrix)
+    score_matrix = (init_score_matrix / norm_matrix + 1) / 2
     pos_scores = score_matrix[list(zip(*pos_index))]
     neg_scores = score_matrix[list(zip(*neg_index))]
     with open('data/log.txt', 'w') as f:
