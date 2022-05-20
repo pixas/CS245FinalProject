@@ -9,7 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 from tqdm import tqdm
 from utils.data import Data
-
+from typing import List
 
 TRAIN_FILE_TXT = 'data/bipartite_train.txt'
 TEST_FILE_TXT = 'data/bipartite_test_ann.txt'
@@ -29,6 +29,7 @@ def parse_args():
     parser.add_argument('--ngcf_dropout', type=float, default=0.3, help='ngcf dropout rate')
     parser.add_argument('--output_dir', type=str, default='data', help='directory to save output csv files')
     parser.add_argument('--rw_length', type=int, default=1024, help='random walk length')
+    parser.add_argument('--layer_size_list', type=List[int], default=[512, 768, 1024], help='increase of receptive field')
     return parser.parse_args()
 
 args = parse_args()
@@ -83,7 +84,7 @@ if __name__ == '__main__':
         paper_dim=args.embed_dim,
         author_dim=args.embed_dim,
         norm_adj=data_generator.bipartite_lap_matrix,
-        n_fold=4,
+        layer_size_list=args.layer_size_list,
         args=args
     )
     model.to(device)
