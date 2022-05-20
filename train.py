@@ -96,12 +96,13 @@ def save_checkpoint(model: General, save_dir: str, keep_last_epochs: int, save_m
 
 def train(model, optimizer, args):
     epoch = args.epoch
-    ckpt_dir = os.listdir(args.save_dir)
-    if ckpt_dir:
-        last_model_dict = torch.load(os.path.join(args.save_dir, 'checkpoint_last.pt'))
-        parameter_dict = last_model_dict['model_state']
-        begin_epoch = last_model_dict['epoch'] + 1
-        model.load_state_dict(parameter_dict)
+    if os.path.exists(args.save_dir):
+        ckpt_dir = os.listdir(args.save_dir)
+        if ckpt_dir:
+            last_model_dict = torch.load(os.path.join(args.save_dir, 'checkpoint_last.pt'))
+            parameter_dict = last_model_dict['model_state']
+            begin_epoch = last_model_dict['epoch'] + 1
+            model.load_state_dict(parameter_dict)
     else:
         begin_epoch = 1
     for epoch_idx in range(begin_epoch, epoch + 1):
