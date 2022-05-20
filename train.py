@@ -40,7 +40,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 data_generator = Data(batch_size=args.batch_size, random_walk_length=args.rw_length, device=device, path=args.datapath)
 # pretrained_author_embedding = data_generator.author_embeddings
 pretrained_author_embedding = torch.arange(0, data_generator.n_authors, 1, device=device)
-pretrained_paper_embedding = data_generator.paper_embeddings
+pretrained_paper_embedding = F.normalize(data_generator.paper_embeddings, p=2, dim=1)
 
 
 def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, authors, papers):
@@ -51,7 +51,6 @@ def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, aut
     
     score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
     score_matrix = F.sigmoid(score_matrix)
-    
     pos_scores = score_matrix[list(zip(*pos_index))]
     neg_scores = score_matrix[list(zip(*neg_index))]
     with open('data/log.txt', 'a') as f:
