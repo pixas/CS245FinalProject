@@ -67,6 +67,7 @@ class RandomWalk(nn.Module):
         Returns:
             _type_: _description_
         """
+        print(paper_embedding.shape, author_embedding.shape)
         paper_selected_idx = paper_selected_idx.repeat((1, self.embed_dim))
         author_selected_idx = author_selected_idx.repeat((1, self.embed_dim))
         paper_selected_embedding = paper_embedding.gather(0, paper_selected_idx).unsqueeze(0)

@@ -65,7 +65,6 @@ class NGCF(nn.Module):
             author_embedding (Tensor): (N, d): author embedding after undertaking random walk and BiLSTM
             paper_embedding (Tensor): (M, d): paper embedding after undertaking random walk and BiLSTM
         """
-
         # A_fold_hat = self._split_A_hat(self.norm_adj)
         ego_embeddings = torch.cat([author_embedding, paper_embedding], 0)
         all_embeddings = [ego_embeddings]
