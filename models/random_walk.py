@@ -92,10 +92,10 @@ class RandomWalk(nn.Module):
         paper_selected_embedding = self.out_paper_norm(paper_selected_embedding).squeeze(0)
         author_selected_embedding = self.out_author_norm(author_selected_embedding).squeeze(0)
         
-        author_embedding.scatter_(0, author_selected_idx, author_selected_embedding)
-        paper_embedding.scatter_(0, paper_selected_idx, paper_selected_embedding)
+        output_author_embedding = author_embedding.scatter(0, author_selected_idx, author_selected_embedding)
+        output_paper_embedding = paper_embedding.scatter(0, paper_selected_idx, paper_selected_embedding)
         
-        return author_embedding, paper_embedding
+        return output_author_embedding, output_paper_embedding
         
 
 

@@ -8,7 +8,6 @@ __pycache__/
 
 # Slurm script
 *.slurm
-log/
 
 # Distribution / packaging
 .Python
@@ -43,7 +42,8 @@ data/paper_file_ann.txt
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt
-
+checkpoints/
+13_ShuyangJiang.csv
 # Unit test / coverage reports
 htmlcov/
 .tox/
@@ -57,11 +57,11 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
-
+data/13_ShuyangJiang.csv
 # Translations
 *.mo
 *.pot
-
+*.sh
 # Django stuff:
 *.log
 local_settings.py
