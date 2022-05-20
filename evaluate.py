@@ -38,12 +38,10 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     output_file_name = "13_ShuyangJiang.csv"
     test_array: list = np.loadtxt(test_file, dtype=int, delimiter=' ').tolist()
     model.eval()
-    author_path, paper_path = data_generator.sample()
+    author_path = paper_path = []
     author_embedding, paper_embedding = model(
         pretrained_author_embedding, 
-        pretrained_paper_embedding,
-        author_path,
-        paper_path
+        pretrained_paper_embedding
     )
     author_embedding = F.normalize(author_embedding, 2, 1)
     paper_embedding = F.normalize(paper_embedding, 2, 1)
