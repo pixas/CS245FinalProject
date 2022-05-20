@@ -22,8 +22,9 @@ class Data(object):
         self.device = device
 
         # data path begin #
-        AUTHOR_CNT = 6611
-        PAPER_CNT = 79937
+        self.author_cnt = 6611
+        self.paper_cnt = 79937
+
         self.author_graph_path = f'{path}/author_file_ann.txt'
         self.paper_graph_path = f'{path}/paper_file_ann.txt'
         self.bipartite_graph_train_path = f'{path}/bipartite_train_ann.txt'
@@ -44,7 +45,7 @@ class Data(object):
         self.train_papers_path = f'{path}/train_papers.pkl'
         # data path end #
 
-        self.n_authors, self.n_papers = AUTHOR_CNT, PAPER_CNT
+        self.n_authors, self.n_papers = self.author_cnt, self.paper_cnt
         self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
         random.shuffle(self.train_index)
         self.real_train_index = self.train_index[:int(len(self.train_index) * train_ratio)]
@@ -87,7 +88,7 @@ class Data(object):
             t1 = time.time()
             with open(self.author_graph_path, 'r') as f:
                 lines = f.readlines()
-                author_author_map = {author: set() for author in range(AUTHOR_CNT)}
+                author_author_map = {author: set() for author in range(self.author_cnt)}
                 for line in lines:
                     for author, coauthor in [line.strip().split(' ')]:
                         author_author_map[int(author)].add(int(coauthor))
@@ -111,7 +112,7 @@ class Data(object):
             t1 = time.time()
             with open(self.author_graph_path, 'r') as f:
                 lines = f.readlines()
-                author_author_map = {author: set() for author in range(AUTHOR_CNT)}
+                author_author_map = {author: set() for author in range(self.author_cnt)}
                 for line in lines:
                     for author, coauthor in [line.strip().split(' ')]:
                         author_author_map[int(author)].add(int(coauthor))
@@ -135,7 +136,7 @@ class Data(object):
         Example:
             paper 1 has cited paper 10, 11
             return {1: {10, 11}, 10: {1}, 11: {1}}
-        Note: all paper indexes are in range [0, PAPER_CNT)
+        Note: all paper indexes are in range [0, self.paper_cnt)
         """
         try:
             t1 = time.time()
@@ -146,7 +147,7 @@ class Data(object):
             t1 = time.time()
             with open(self.paper_graph_path, 'r') as f:
                 lines = f.readlines()
-                paper_paper_map = {paper: set() for paper in range(PAPER_CNT)}
+                paper_paper_map = {paper: set() for paper in range(self.paper_cnt)}
                 for line in lines:
                     for paper, cited_paper in [line.strip().split(' ')]:
                         paper_paper_map[int(paper)].add(int(cited_paper))
@@ -170,7 +171,7 @@ class Data(object):
             t1 = time.time()
             with open(self.paper_graph_path, 'r') as f:
                 lines = f.readlines()
-                paper_paper_map = {paper: set() for paper in range(PAPER_CNT)}
+                paper_paper_map = {paper: set() for paper in range(self.paper_cnt)}
                 for line in lines:
                     for paper, cited_paper in [line.strip().split(' ')]:
                         paper_paper_map[int(paper)].add(int(cited_paper))
@@ -209,7 +210,7 @@ class Data(object):
             train_author_idx(List[int]): All authors id in training set.
             train_paper_idx(List[int]): All papers id in training set.
         Note:
-            all paper indexes are in range [0, PAPER_CNT)
+            all paper indexes are in range [0, self.paper_cnt)
         Example:
             train_idx = [[1, 2], [3, 4], [5, 6]]
             train_author_idx = [1, 3, 5]
@@ -269,7 +270,7 @@ class Data(object):
         except:
             t1 = time.time()
             assert self.author_paper_map != None
-            degree_value = [0] * (AUTHOR_CNT + PAPER_CNT)
+            degree_value = [0] * (self.author_cnt + self.paper_cnt)
             index = []
             for author, papers in self.author_paper_map.items():
                 degree_value[author] = len(papers)
@@ -278,12 +279,12 @@ class Data(object):
                     degree_value[paper] += 1
             # adjacency matrix
             v = [1] * len(index)
-            bipartite_adj_matrix = torch.sparse_coo_tensor(list(zip(*index)), v, (AUTHOR_CNT + PAPER_CNT, PAPER_CNT + AUTHOR_CNT))
+            bipartite_adj_matrix = torch.sparse_coo_tensor(list(zip(*index)), v, (self.author_cnt + self.paper_cnt, self.paper_cnt + self.author_cnt))
 
             # Laplacian matrix
             bipartite_lap_index = index
             bipartite_lap_value = [1 / (degree_value[author] * degree_value[paper]) ** (1 / 2) for author, paper in index]
-            bipartite_lap_matrix = torch.sparse_coo_tensor(list(zip(*bipartite_lap_index)), bipartite_lap_value, (AUTHOR_CNT + PAPER_CNT, PAPER_CNT + AUTHOR_CNT))
+            bipartite_lap_matrix = torch.sparse_coo_tensor(list(zip(*bipartite_lap_index)), bipartite_lap_value, (self.author_cnt + self.paper_cnt, self.paper_cnt + self.author_cnt))
             print(f'Build train indexes.')
             print(f'Build bipartite adjacency matrix and Laplacian matrix, time cost: {time.time() - t1: .3f}s')
             with open(self.train_idx_path, 'wb') as f:
@@ -304,7 +305,7 @@ class Data(object):
             author 1 has cited paper 10, 11
             author 2 has cited paper 10, 12
             return {1: [10, 11], 2: [10, 12]}
-        Note: all paper indexes have been added AUTHOR_CNT
+        Note: all paper indexes have been added self.author_cnt
         """
         try:
             t1 = time.time()
@@ -315,10 +316,10 @@ class Data(object):
             t1 = time.time()
             with open(self.bipartite_graph_train_path, 'r') as f:
                 lines = f.readlines()
-                author_paper_map = {author: set() for author in range(AUTHOR_CNT)}
+                author_paper_map = {author: set() for author in range(self.author_cnt)}
                 for line in lines:
                     for author, paper in [line.strip().split(' ')]:
-                        author_paper_map[int(author)].add(int(paper) + AUTHOR_CNT)
+                        author_paper_map[int(author)].add(int(paper) + self.author_cnt)
             print(f'Build author-paper map, time cost: {time.time() - t1: .3f}s')
             with open(self.author_paper_map_path, 'wb') as f:
                 pickle.dump(author_paper_map, f)
@@ -343,10 +344,10 @@ class Data(object):
         Args:
             t (int): the length of random walk (t << N).
         Returns:
-            random_walk_matrix (Tensor): (AUTHOR_CNT, t)
+            random_walk_matrix (Tensor): (self.author_cnt, t)
         """
         random_walk_matrix = torch.zeros(size=(t, 1), dtype=torch.int64)
-        start_author = random.choice(range(0, AUTHOR_CNT))
+        start_author = random.choice(range(0, self.author_cnt))
         random_walk_matrix[0, 0] = start_author
         pre = start_author
         for i in range(1, t):
@@ -365,7 +366,7 @@ class Data(object):
             random_walk_matrix (Tensor): (t, 1)
         """
         random_walk_matrix = torch.zeros(size=(t, 1), dtype=torch.int64)
-        start_paper = random.choice(range(0, PAPER_CNT))
+        start_paper = random.choice(range(0, self.paper_cnt))
         random_walk_matrix[0, 0] = start_paper
         pre = start_paper
         for i in range(1, t):
@@ -396,9 +397,9 @@ class Data(object):
         for neg_train_author in neg_train_authors:
             flag = False
             while not flag:
-                random_paper = np.random.randint(low=AUTHOR_CNT, high=AUTHOR_CNT + self.n_papers, size=1)[0]
+                random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.n_papers, size=1)[0]
                 if random_paper not in self.author_paper_map[neg_train_author]:
-                    neg_train_index.append([neg_train_author, random_paper - AUTHOR_CNT])
+                    neg_train_index.append([neg_train_author, random_paper - self.author_cnt])
                     flag = True
 
         # get authors and papers
@@ -428,9 +429,9 @@ class Data(object):
         for neg_test_author in neg_test_authors:
             flag = False
             while not flag:
-                random_paper = np.random.randint(low=AUTHOR_CNT, high=AUTHOR_CNT + self.n_papers, size=1)[0]
+                random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.n_papers, size=1)[0]
                 if random_paper not in self.author_paper_map[neg_test_author]:
-                    neg_test_index.append([neg_test_author, random_paper - AUTHOR_CNT])
+                    neg_test_index.append([neg_test_author, random_paper - self.author_cnt])
                     flag = True
 
         # get authors and papers
@@ -463,16 +464,16 @@ class Data(object):
         for neg_train_author in neg_train_authors:
             flag = False
             while not flag:
-                random_paper = np.random.randint(low=AUTHOR_CNT, high=AUTHOR_CNT + self.n_papers, size=1)[0]
+                random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.n_papers, size=1)[0]
                 if random_paper not in self.author_paper_map[neg_train_author]:
-                    real_train_neg_index.append([neg_train_author, random_paper - AUTHOR_CNT])
+                    real_train_neg_index.append([neg_train_author, random_paper - self.author_cnt])
                     flag = True
         for neg_test_author in neg_test_authors:
             flag = False
             while not flag:
-                random_paper = np.random.randint(low=AUTHOR_CNT, high=AUTHOR_CNT + self.n_papers, size=1)[0]
+                random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.n_papers, size=1)[0]
                 if random_paper not in self.author_paper_map[neg_test_author]:
-                    real_test_neg_index.append([neg_test_author, random_paper - AUTHOR_CNT])
+                    real_test_neg_index.append([neg_test_author, random_paper - self.author_cnt])
                     flag = True
         t3 = time.time()
         print(f'Get negative train/test indexes, time cost: {t3 - t2: .3f}s')
