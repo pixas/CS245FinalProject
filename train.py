@@ -48,16 +48,19 @@ def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, aut
     paper_embeddings = paper_embedding[papers]
     # author_embedding = F.normalize(author_embedding, p=2, dim=1)
     # paper_embedding = F.normalize(paper_embedding, p=2, dim=1)
-
+    
     score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
     score_matrix = F.sigmoid(score_matrix)
     
     pos_scores = score_matrix[list(zip(*pos_index))]
     neg_scores = score_matrix[list(zip(*neg_index))]
-    print(pos_scores[:10])
-    print(neg_scores[:10])
+    with open('data/log.txt', 'a') as f:
+        f.write(str(score_matrix[:10]) + '\n')
+        f.write(str(pos_scores[:10]) + '\n')
+        f.write(str(neg_scores[:10]) + '\n')
+        f.write('\n')
     # mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
-    mf_loss = (torch.sum(torch.log(pos_scores)) + torch.sum(torch.log(1 - neg_scores))) / (len(pos_index) + len(neg_index))
+    mf_loss = - (torch.sum(torch.log(pos_scores)) + torch.sum(torch.log(1 - neg_scores))) / (len(pos_index) + len(neg_index))
 
     regularizer = (torch.norm(author_embeddings) ** 2 + torch.norm(paper_embeddings) ** 2) / 2
     emb_loss = decay * regularizer / (len(authors) + len(papers))
