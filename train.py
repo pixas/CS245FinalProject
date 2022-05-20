@@ -178,7 +178,7 @@ if __name__ == '__main__':
         paper_dim=args.embed_dim,
         author_dim=args.embed_dim,
         norm_adj=data_generator.bipartite_lap_matrix,
-        n_fold=4,
+        layer_size_list=args.layer_size_list
         args=args
     )
     model.to(device)
