@@ -7,13 +7,15 @@ from argparse import ArgumentParser
 from torch_sparse import SparseTensor
 from models.NGCF import NGCF
 from models.random_walk import RandomWalk
+from torch_cluster import random_walk
+
 
 class General(nn.Module):
     def __init__(self, RWembed_dim: int, stack_layers: int, dropoutRW: float,
                 n_authors: int, n_papers: int, 
-                num_layers: int, NGCFembed_dim: int, dropoutNGCF:float,
-                paper_dim: int, author_dim: int,
-                norm_adj: SparseTensor, layer_size_list: List[int],
+                norm_adj: SparseTensor,
+                author_adj: SparseTensor,
+                paper_adj: SparseTensor, 
                 args: ArgumentParser) -> None:
         """initializes General model
         Args:
@@ -34,17 +36,20 @@ class General(nn.Module):
             n_fold (int): cannot multiply (N+M, N+M) with (N+M, d) directly; split into several (N+M/n_fold, N+M) and (N+M, d) and concatenate them together in the end.
         """
         super(General, self).__init__()
-        self.embed_layer = nn.Embedding(n_authors, author_dim)
+        self.args = args
+        self.embed_layer = nn.Embedding(n_authors, args.author_dim)
         # self.RW = RandomWalk(RWembed_dim, stack_layers, dropoutRW, args)
-        self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
-                 num_layers, NGCFembed_dim, paper_dim, author_dim,
-                 norm_adj, layer_size_list)
+        self.NGCF = NGCF(n_authors, n_papers, args.ngcf_dropout, 
+                 args.NGCF_layers, args.embed_dim, args.paper_dim, args.author_dim,
+                 norm_adj, args.layer_size_list)
     
     
     def forward(self, author_embedding: Tensor,
                 paper_embedding: Tensor,
                 author_selected_idx: Tensor, 
-                paper_selected_idx: Tensor):
+                paper_selected_idx: Tensor,
+                train_authors: List[int],
+                train_papers: List[int]):
         """update General model
         Args:
             author_embedding (Tensor): (N, d), where N is the number of authors
@@ -55,6 +60,9 @@ class General(nn.Module):
             _type_: _description_
         """
         author_embedding = self.embed_layer(author_embedding)
+        if self.training:
+            
+            pass
         # author_embedding, paper_embedding = self.RW(author_embedding, paper_embedding, author_selected_idx, paper_selected_idx)
         author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
         
