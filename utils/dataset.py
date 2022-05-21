@@ -73,7 +73,8 @@ class AcademicDataset(object):
 
 
         sample_number = self.sample_number
-        neighbor_embedding = torch.zeros((self.batch_size, sample_number + 1, paper_feature.shape[-1]), dtype=paper_feature.dtype).to(self.device)
+        length = len(train_paper_index)
+        neighbor_embedding = torch.zeros((length, sample_number + 1, paper_feature.shape[-1]), dtype=paper_feature.dtype).to(self.device)
         
         for j, value in enumerate(train_paper_index):
             possible_idx = list(self._paper_paper_map[value])
