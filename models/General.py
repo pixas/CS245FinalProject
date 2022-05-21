@@ -78,10 +78,10 @@ class General(nn.Module):
 
         author_embedding_new = self.au_GNN(author_embedding,self.author_adj)
         # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
-        batch_paper_index = torch.tensor(batch_paper_index, 
+        batch_paper_gather_index = torch.tensor(batch_paper_index, 
                                          dtype=torch.int64, 
                                          device=author_embedding.device).unsqueeze(-1).unsqueeze(-1).repeat((1, paper_neighbor_embedding.shape[1], paper_neighbor_embedding.shape[-1]))
-        gat_embedding = torch.gather(paper_neighbor_embedding, 0, batch_paper_index)
+        gat_embedding = torch.gather(paper_neighbor_embedding, 0, batch_paper_gather_index)
         gat_embedding = self.pa_GAT(gat_embedding)
         paper_embedding_new = paper_embedding.scatter(0, torch.tensor(batch_paper_index, 
                                                                     dtype=torch.int64, 
