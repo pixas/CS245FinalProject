@@ -39,19 +39,19 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     test_array: list = np.loadtxt(test_file, dtype=int, delimiter=' ').tolist()
     model.eval()
     author_path = paper_path = []
-    author_embedding, paper_embedding = model(
+    author_embedding, paper_embedding, interact_prob = model(
         pretrained_author_embedding, 
-        pretrained_paper_embedding
+        pretrained_paper_embedding,
+
     )
-    author_embedding = F.normalize(author_embedding, 2, 1)
-    paper_embedding = F.normalize(paper_embedding, 2, 1)
+
     f = open(os.path.join(output_dir, output_file_name), 'w')
     f.write("Index,Probability\n")
     with tqdm(total=len(test_array)) as t:
         t.set_description("Evaluating:")
         for idx, (author, paper) in enumerate(test_array):
             result = torch.sum(author_embedding[author] * paper_embedding[paper])
-            prob = (1 + result.item()) / 2.0
+            prob = torch.sigmoid(result).item()
             f.write("{},{}\n".format(idx, prob))
             t.update(1)
     f.close()
@@ -78,7 +78,7 @@ if __name__ == '__main__':
         author_dim=train_args.embed_dim,
         norm_adj=data_generator.bipartite_lap_matrix,
         layer_size_list=train_args.layer_size_list,
-        args=args
+        args=train_args
     )
     model.to(device)
     model.load_state_dict(model_parameter['model_state'])
