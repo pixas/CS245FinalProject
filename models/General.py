@@ -79,6 +79,7 @@ class General(nn.Module):
         # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
 
         gat_embedding = self.pa_GAT(paper_neighbor_embedding)
+        print(len(batch_paper_index), gat_embedding.shape, paper_embedding.shape)
         paper_embedding_new = paper_embedding.scatter(0, torch.tensor(batch_paper_index, 
                                                                     dtype=torch.int64, 
                                                                     device=author_embedding.device).unsqueeze(-1).repeat(1, gat_embedding.shape[-1]), gat_embedding)
