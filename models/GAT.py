@@ -26,7 +26,7 @@ class GATBlock(nn.Module):
         
     
     def forward(self, x: Tensor):
-        key_padding_mask = torch.all(x == 0, -1).unsqueeze(-1)
+        key_padding_mask = torch.all(x == 0, -1)
         residual = x 
         x, _ = self.attention(
             query=x,
