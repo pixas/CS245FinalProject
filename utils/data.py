@@ -3,6 +3,7 @@ import pickle
 import random
 import time
 import torch
+import torch.nn.functional as F
 from torch_sparse import SparseTensor
 from torch import Tensor 
 from typing import Dict, List, Set, Tuple
@@ -36,6 +37,7 @@ class Data(object):
         self.author_author_map_path = f'{path}/author_author_map.pkl'
         self.paper_adj_path = f'{path}/paper_adj.pkl'
         self.paper_paper_map_path = f'{path}/paper_paper_map.pkl'
+        self.paper_paper_nei_path = f'{path}/paper_paper_nei.pkl'
         self.bipartite_adj_path = f'{path}/bipartite_adj.pkl'
         self.bipartite_lap_path = f'{path}/bipartite_lap.pkl'
 
@@ -43,6 +45,7 @@ class Data(object):
         self.train_idx_path = f'{path}/train_idx.pkl'
         self.train_authors_path = f'{path}/train_authors.pkl'
         self.train_papers_path = f'{path}/train_papers.pkl'
+        
         # data path end #
 
         self.n_authors, self.n_papers = self.author_cnt, self.paper_cnt
@@ -68,7 +71,9 @@ class Data(object):
             self.paper_embeddings = pickle.load(f)
 
         self.paper_embeddings = self.paper_embeddings.to(self.device)
+        self.paper_embeddings = F.normalize(self.paper_embeddings, 2, 1)
         self.author_embeddings = self.author_embeddings.to(self.device)
+        self.paper_paper_nei_embeddings = self.get_paper_paper_nei()
 
 
     def get_author_author_map(self) -> Dict[int, Set[int]]:
@@ -129,6 +134,44 @@ class Data(object):
         author_adj_matrix = author_adj_matrix.to(self.device,dtype=torch.float)
         return author_adj_matrix
 
+    def get_paper_paper_nei(self):
+        try: 
+            t1 = time.time()
+            # with open(self.paper_paper_nei_path, 'rb') as f:
+            #     neighbor_embedding = pickle.load(f)
+            neighbor_embedding = torch.load(self.paper_paper_nei_path)
+            print(f"Load paper-paper map from {self.paper_paper_nei_path}, time cost: {time.time() - t1:.3f}s")
+            
+        except:
+            t1 = time.time()
+            
+            paper_feature = self.paper_embeddings
+            paper_paper_map = self.paper_paper_map
+
+            # max_connection = max(len(list(x)) for i, x in paper_paper_map.items())
+            sample_number = 64
+
+            neighbor_embedding = torch.zeros((self.paper_cnt, sample_number + 1, paper_feature.shape[-1]), device=self.device, dtype=paper_feature.dtype)
+            for i, x in paper_paper_map.items():
+                possible_idx = list(x)
+                random.shuffle(possible_idx)
+                idx = torch.LongTensor(possible_idx if len(possible_idx) <= sample_number else possible_idx[:sample_number], device=self.device)
+
+                gather_idx = idx.unsqueeze(-1).repeat((1, paper_feature.shape[-1]))
+
+                gathered_embedding = paper_feature.gather(0, gather_idx)
+                neighbor_embedding[i] = neighbor_embedding[i].scatter(0, 
+                                                                      torch.arange(1, len(idx) + 1, 1, dtype=torch.int64, device=self.device).unsqueeze(-1).repeat((1, paper_feature.shape[-1])), gathered_embedding)
+                neighbor_embedding[i, 0] = paper_feature[i]
+
+            print(f'Build paper paper neighborhood, time cost: {time.time() - t1:.3f}')
+            torch.save(neighbor_embedding, self.paper_paper_nei_path)
+            # with open(self.paper_paper_nei_path, 'wb') as f:
+            #     pickle.dump(neighbor_embedding, f)
+        
+        return neighbor_embedding
+                
+    
     def get_paper_paper_map(self) -> Dict[int, Set[int]]:
         """Returns the mapping from papers to papers in citation network.
         Returns:
@@ -489,7 +532,7 @@ class Data(object):
         return real_train_pos_index, real_train_neg_index, real_test_pos_index, real_test_neg_index, real_train_authors, real_train_papers, real_test_authors, real_test_papers
 
 if __name__ == '__main__':
-    data_generator = Data(batch_size=1024, random_walk_length=16, device='cpu')
+    data_generator = Data(batch_size=1024, random_walk_length=16, device='cpu', path='data')
     # print(data_generator.author_author_map[0])
     # print(data_generator.paper_paper_map[0])
     # print('--author--')
@@ -510,23 +553,24 @@ if __name__ == '__main__':
     # print(data_generator.train_authors[:10])
     # print(len(data_generator.train_papers))
     # print(data_generator.train_papers[:10])
-    a, b, c, d = data_generator.sample_train()
-    e, f, g, h = data_generator.sample_test()
-    print(a[:10])
-    print(b[:10])
-    print(c[:10])
-    print(d[:10])
-    print(list(e)[:10])
-    print(list(f)[:10])
-    print(list(g)[:10])
-    print(list(h)[:10])
-    print('-------------')
-    print(len(a))
-    print(len(b))
-    print(len(c))
-    print(len(d))
-    print(len(e))
-    print(len(f))
-    print(len(g))
-    print(len(h))
+    # a, b, c, d = data_generator.sample_train()
+    # e, f, g, h = data_generator.sample_test()
+    # print(a[:10])
+    # print(b[:10])
+    # print(c[:10])
+    # print(d[:10])
+    # print(list(e)[:10])
+    # print(list(f)[:10])
+    # print(list(g)[:10])
+    # print(list(h)[:10])
+    # print('-------------')
+    # print(len(a))
+    # print(len(b))
+    # print(len(c))
+    # print(len(d))
+    # print(len(e))
+    # print(len(f))
+    # print(len(g))
+    # print(len(h))
+    
 

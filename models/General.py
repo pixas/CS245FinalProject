@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from torch import Tensor 
 from argparse import ArgumentParser
 from torch_sparse import SparseTensor
+from models.GAT import GAT
 from models.NGCF import NGCF
 from models.random_walk import RandomWalk
 from models.GCN import GNN
@@ -53,16 +54,17 @@ class General(nn.Module):
         self.author_adj = author_adj
         
         self.au_GNN = GNN(author_dim,author_dim,author_dim,Au_layers,Authordropout,True)
-        self.pa_GNN = GNN(paper_dim,paper_dim,paper_dim,Pa_layers,Paperdropout,True)
+        # self.pa_GNN = GNN(paper_dim,paper_dim,paper_dim,Pa_layers,Paperdropout,True)
         
-        
+        self.pa_GAT = GAT(paper_dim, args.num_heads, Paperdropout, args.gat_layers)
         # self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
         #          num_layers, NGCFembed_dim, paper_dim, author_dim,
         #          norm_adj, layer_size_list)
 
     
     def forward(self, author_embedding: Tensor,
-                paper_embedding: Tensor):
+                paper_embedding: Tensor,
+                paper_neighbor_embedding: Tensor):
         """update General model
         Args:
             author_embedding (Tensor): (N, d), where N is the number of authors
@@ -74,7 +76,8 @@ class General(nn.Module):
             author_embedding = self.auther_emb(author_embedding)
 
         author_embedding_new = self.au_GNN(author_embedding,self.author_adj)
-        paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
+        # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
+        paper_embedding_new = self.pa_GAT(paper_neighbor_embedding)
         # author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
         interact_prob = torch.einsum("nd,md->nm", author_embedding_new, paper_embedding_new)
         interact_prob = torch.sigmoid(interact_prob)

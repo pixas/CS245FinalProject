@@ -27,6 +27,11 @@ def parse_args():
     parser.add_argument('--rw_length', type=int, default=512, help='random walk length')
     parser.add_argument('--layer_size_list', type=List[int], default=[512, 768, 1024], help='increase of receptive field')
     parser.add_argument('--pa_layers', type=int, default=2, help='paper GNN layers')
+    
+    # GAT Parameters
+    parser.add_argument('--num_heads', type=int, default=8, help='multihead attention heads')
+    parser.add_argument('--gat_layers', type=int, default=6, help='GAT stack layers')
+    
     parser.add_argument('--au_layers', type=int, default=2, help='author GNN layers')
     parser.add_argument('--decay', type=float, default=0.1, help='regularizer term coefficient')
     parser.add_argument('--gnn_dropout', type=float, default=0.2, help='GNN layer dropout rate')
@@ -40,8 +45,8 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 data_generator = Data(batch_size=args.batch_size, random_walk_length=args.rw_length, device=device, path=args.datapath)
 # pretrained_author_embedding = data_generator.author_embeddings
 pretrained_author_embedding = torch.arange(0, data_generator.n_authors, 1, device=device)
-pretrained_paper_embedding = F.normalize(data_generator.paper_embeddings, p=2, dim=1)
-
+pretrained_paper_embedding = data_generator.paper_embeddings
+paper_neighbor_embedding = data_generator.paper_paper_nei_embeddings
 
 def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index, neg_index, authors, papers):
     author_embeddings = author_embedding[authors]
@@ -124,7 +129,7 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
             author_embedding, paper_embedding, interact_prob = model(
                 pretrained_author_embedding, 
                 pretrained_paper_embedding,
-
+                paper_neighbor_embedding
             )
             test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
             test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
@@ -168,6 +173,7 @@ def train(model, optimizer, args):
                 author_embedding, paper_embedding, interact_prob = model(
                     pretrained_author_embedding, 
                     pretrained_paper_embedding,
+                    paper_neighbor_embedding
                 )
                 # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()
                 train_pos_index, train_neg_index, train_authors, train_papers = data_generator.sample_train()
