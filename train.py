@@ -67,8 +67,9 @@ def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index,
     # pred_pos = torch.sum(score_matrix >= 0)
     pos_samples = pos_scores >= 0.5
     neg_samples = neg_scores < 0.5
+    false_pos_samples = neg_scores >= 0.5
     true_pos = torch.sum(pos_samples)
-    precision = torch.sum(pos_samples) / (torch.sum(pos_samples) + torch.sum(neg_samples))
+    precision = torch.sum(pos_samples) / (torch.sum(pos_samples) + torch.sum(false_pos_samples))
     recall = true_pos / len(pos_index)
 
     return mf_loss + emb_loss, mf_loss, emb_loss, precision, recall
