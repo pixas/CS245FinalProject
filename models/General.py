@@ -56,9 +56,9 @@ class General(nn.Module):
         self.pa_GNN = GNN(paper_dim,paper_dim,paper_dim,Pa_layers,Paperdropout,True)
         
         
-        self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
-                 num_layers, NGCFembed_dim, paper_dim, author_dim,
-                 norm_adj, layer_size_list)
+        # self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
+        #          num_layers, NGCFembed_dim, paper_dim, author_dim,
+        #          norm_adj, layer_size_list)
 
     
     def forward(self, author_embedding: Tensor,
@@ -73,9 +73,9 @@ class General(nn.Module):
         if not self.use_pretrain:
             author_embedding = self.auther_emb(author_embedding)
 
-        author_embedding = self.au_GNN(author_embedding,self.author_adj)
-        paper_embedding = self.pa_GNN(paper_embedding,self.paper_adj)
-        author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
+        author_embedding_new = self.au_GNN(author_embedding,self.author_adj)
+        paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
+        # author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
         interact_prob = torch.einsum("nd,md->nm", author_embedding_new, paper_embedding_new)
         interact_prob = torch.sigmoid(interact_prob)
         return author_embedding_new, paper_embedding_new, interact_prob

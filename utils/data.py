@@ -384,8 +384,8 @@ class Data(object):
             train_authors (List[int])
             train_papers (List[int])
         """
-        assert self.batch_size % 8 == 0
-        pos_train_num = self.batch_size // 8 * 7
+        # assert self.batch_size % 4 == 0
+        pos_train_num = self.batch_size // 4 * 3
         neg_train_num = self.batch_size - pos_train_num
 
         # sample positive
