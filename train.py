@@ -7,18 +7,21 @@ import torch
 import torch.nn.functional as F 
 import torch.optim as optim
 from tqdm import tqdm
-from utils.data import Data
-
+from utils.dataset import AcademicDataset
+from functools import cmp_to_key
 
 TRAIN_FILE_TXT = 'data/bipartite_train.txt'
 def parse_args():
     parser = argparse.ArgumentParser(description="Run General")
     parser.add_argument('save_dir', type=str, default='checkpoints', help='Directory to save checkpoints')
+    
+    # Optimization Parameters
     parser.add_argument('--module_type', nargs='?', default='LSTM', help='Module in coauthor and citation network')
     parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate.')
     parser.add_argument('--epoch', type=int, default=100, help='Number of epochs')
     parser.add_argument('--keep_last_epochs', type=int, default=5, help='only keep last epochs')
     parser.add_argument('--batch_size', type=int, default=8192, help='batch samples for positive and negative samples')
+    
     parser.add_argument('--embed_dim', type=int, default=512, help='embedding dimension')
     parser.add_argument('--rw_stack_layers', type=int, default=2, help='random walk module stack layers')
     parser.add_argument('--rw_dropout', type=float, default=0.3, help='random walk dropout rate')
@@ -26,15 +29,22 @@ def parse_args():
     parser.add_argument('--ngcf_dropout', type=float, default=0.3, help='ngcf dropout rate')
     parser.add_argument('--rw_length', type=int, default=512, help='random walk length')
     parser.add_argument('--layer_size_list', type=List[int], default=[512, 768, 1024], help='increase of receptive field')
-    parser.add_argument('--pa_layers', type=int, default=2, help='paper GNN layers')
+    
     
     # GAT Parameters
     parser.add_argument('--num_heads', type=int, default=8, help='multihead attention heads')
     parser.add_argument('--gat_layers', type=int, default=6, help='GAT stack layers')
     
+    # GCN Parameters
+    parser.add_argument('--pa_layers', type=int, default=2, help='paper GNN layers')
     parser.add_argument('--au_layers', type=int, default=2, help='author GNN layers')
-    parser.add_argument('--decay', type=float, default=0.1, help='regularizer term coefficient')
     parser.add_argument('--gnn_dropout', type=float, default=0.2, help='GNN layer dropout rate')
+    
+    
+    parser.add_argument('--decay', type=float, default=0.1, help='regularizer term coefficient')
+    
+    # dataset Parameters
+    parser.add_argument('--sample_number', type=int, default=64, help='gat sample number for attention')
     parser.add_argument('--datapath', type=str, default='data', help='data path')
     return parser.parse_args()
 
@@ -42,11 +52,11 @@ def parse_args():
 args = parse_args()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-data_generator = Data(batch_size=args.batch_size, random_walk_length=args.rw_length, device=device, path=args.datapath)
+data_generator = AcademicDataset(batch_size=args.batch_size, random_walk_length=args.rw_length, device=device, path=args.datapath)
 # pretrained_author_embedding = data_generator.author_embeddings
 pretrained_author_embedding = torch.arange(0, data_generator.n_authors, 1, device=device)
-pretrained_paper_embedding = data_generator.paper_embeddings
-paper_neighbor_embedding = data_generator.paper_paper_nei_embeddings
+pretrained_paper_embedding = data_generator.get_paper_embeddings()
+
 
 def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index, neg_index, authors, papers):
     author_embeddings = author_embedding[authors]
@@ -98,7 +108,7 @@ def save_checkpoint(model: General, args: argparse.ArgumentParser, save_metric: 
         if len(all_ckpts) - 2 >= keep_last_epochs:
             all_ckpts.remove('checkpoint_best.pt')
             all_ckpts.remove('checkpoint_last.pt')
-            all_ckpts.sort()
+            all_ckpts.sort(key=cmp_to_key(lambda x, y: int(x[10:-3]) - int(y[10:-3])))
             os.system("rm -rf {}".format(os.path.join(save_dir, all_ckpts[0])))
             torch.save(cur_save_info, os.path.join(save_dir, "checkpoint_last.pt"))
             torch.save(cur_save_info, os.path.join(save_dir, "checkpoint{}.pt".format(epoch)))
@@ -125,8 +135,9 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
         epoch_loss, epoch_mf_loss, epoch_emb_loss = 0, 0, 0
         epoch_total_precision, epoch_total_recall = 0, 0
         for batch_idx in range(1, n_test_batch + 1):
-            author_path = paper_path = []
+
             test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
+            paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(test_papers)
             author_embedding, paper_embedding, interact_prob = model(
                 pretrained_author_embedding, 
                 pretrained_paper_embedding,
@@ -140,13 +151,16 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
             epoch_emb_loss += test_emb_loss
             epoch_total_precision += test_precision
             epoch_total_recall += test_recall
+            
+            t.set_postfix({"loss": f"{test_loss:.4f}", 'mf_loss': f"{test_mf_loss:.4f}", 'precision': f"{test_precision:.4f}", 'recall': f"{test_recall:.4f}"})
+            t.update(1)
     
     test_loss = epoch_loss / n_test_batch
     test_mf_loss = epoch_mf_loss / n_test_batch
     test_total_precision = epoch_total_precision / n_test_batch
     test_total_recall = epoch_total_recall / n_test_batch
     return test_loss, test_mf_loss, test_total_precision, test_total_recall
-    pass
+
 
 def train(model, optimizer, args):
 
@@ -170,8 +184,9 @@ def train(model, optimizer, args):
 
             for batch_idx in range(1, n_train_batch + 1):
                 # author_path, paper_path = data_generator.sample()
-                author_path = paper_path = []
+
                 train_pos_index, train_neg_index, train_authors, train_papers = data_generator.sample_train()
+                paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(train_papers)
                 author_embedding, paper_embedding, interact_prob = model(
                     pretrained_author_embedding, 
                     pretrained_paper_embedding,

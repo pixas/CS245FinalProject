@@ -5,10 +5,9 @@ import numpy as np
 from models.General import General
 import time
 import torch
-import torch.nn.functional as F 
-import torch.optim as optim
+
 from tqdm import tqdm
-from utils.data import Data
+from utils.dataset import AcademicDataset
 from typing import List
 
 TRAIN_FILE_TXT = 'data/bipartite_train.txt'
@@ -26,12 +25,12 @@ model_parameter = torch.load(args.path)
 train_args = model_parameter['args']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-data_generator = Data(batch_size=train_args.batch_size, random_walk_length=train_args.rw_length,device=device, path=train_args.datapath)
+data_generator = AcademicDataset(batch_size=train_args.batch_size, random_walk_length=train_args.rw_length,device=device, path=train_args.datapath)
 # pretrained_author_embedding = data_generator.author_embeddings
 pretrained_author_embedding = torch.arange(0, data_generator.n_authors, 1, device=device)
-pretrained_paper_embedding = data_generator.paper_embeddings
+pretrained_paper_embedding = data_generator.get_paper_embeddings()
 
-paper_neighbor_embedding = data_generator.paper_paper_nei_embeddings
+
 
 @torch.no_grad()
 def evaluate_test_ann(model: General, test_file: str, output_dir: str):
@@ -40,6 +39,7 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     model.eval()
     author_path = paper_path = []
     test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
+    paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(test_papers)
     author_embedding, paper_embedding, interact_prob = model(
         pretrained_author_embedding, 
         pretrained_paper_embedding,

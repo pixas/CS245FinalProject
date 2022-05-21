@@ -1,3 +1,5 @@
+from functools import cmp_to_key
+import numpy as np
 from models.NGCF import NGCF
 import torch
 import torch.nn as nn
@@ -30,10 +32,8 @@ if __name__ == '__main__':
     # with open("./data/author_vec.pkl", 'rb') as f:
     #     x = pickle.load(f)
     # print(x.shape)
-    x = torch.zeros((3,4, 8))
-    x[0, 1] = torch.ones((8,))
+    x = ['checkpoint1.pt', 'checkpoint9.pt', 'checkpoint38.pt']
+    x.sort(key=cmp_to_key(lambda x, y: int(x[10:-3]) - int(y[10:-3])))
     print(x)
-    print(torch.all(x == 0, -1))
-    print(torch.masked_fill(x, torch.all(x == 0, -1).unsqueeze(-1), 2))
     # print(a.shape)
     
