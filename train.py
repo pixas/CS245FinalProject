@@ -134,13 +134,14 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
             epoch_emb_loss += test_emb_loss
             epoch_total_precision += test_precision
             epoch_total_recall += test_recall
+
+            t.update(1)
     
     test_loss = epoch_loss / n_test_batch
     test_mf_loss = epoch_mf_loss / n_test_batch
     test_total_precision = epoch_total_precision / n_test_batch
     test_total_recall = epoch_total_recall / n_test_batch
     return test_loss, test_mf_loss, test_total_precision, test_total_recall
-    pass
 
 def train(model, optimizer, args):
 
