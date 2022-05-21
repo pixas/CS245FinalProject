@@ -78,7 +78,6 @@ if __name__ == '__main__':
         dropoutNGCF=train_args.ngcf_dropout,
         paper_dim=train_args.embed_dim,
         author_dim=train_args.embed_dim,
-        norm_adj=data_generator.bipartite_lap_matrix,
         layer_size_list=train_args.layer_size_list,
         args=train_args
     )

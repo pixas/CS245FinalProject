@@ -254,7 +254,6 @@ if __name__ == '__main__':
         dropoutNGCF=args.ngcf_dropout,
         paper_dim=args.embed_dim,
         author_dim=args.embed_dim,
-        norm_adj=data_generator.bipartite_lap_matrix,
         layer_size_list=args.layer_size_list,
         args=args
     )

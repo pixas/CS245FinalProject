@@ -17,8 +17,7 @@ class General(nn.Module):
                 Paperdropout:float,Authordropout:float,
                 n_authors: int, n_papers: int, 
                 num_layers: int, NGCFembed_dim: int, dropoutNGCF:float,
-                paper_dim: int, author_dim: int,
-                norm_adj: SparseTensor, layer_size_list: List[int],
+                paper_dim: int, author_dim: int, layer_size_list: List[int],
                 args: ArgumentParser,
                 use_pretrain= False) -> None:
         """initializes General model
