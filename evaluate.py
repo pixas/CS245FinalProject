@@ -26,7 +26,7 @@ model_parameter = torch.load(args.path)
 train_args = model_parameter['args']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-data_generator = Data(batch_size=train_args.batch_size, random_walk_length=train_args.rw_length,device=device)
+data_generator = Data(batch_size=train_args.batch_size, random_walk_length=train_args.rw_length,device=device, path=train_args.datapath)
 # pretrained_author_embedding = data_generator.author_embeddings
 pretrained_author_embedding = torch.arange(0, data_generator.n_authors, 1, device=device)
 pretrained_paper_embedding = data_generator.paper_embeddings
