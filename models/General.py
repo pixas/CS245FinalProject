@@ -64,7 +64,8 @@ class General(nn.Module):
     
     def forward(self, author_embedding: Tensor,
                 paper_embedding: Tensor,
-                paper_neighbor_embedding: Tensor):
+                paper_neighbor_embedding: Tensor,
+                batch_paper_index: List[int]):
         """update General model
         Args:
             author_embedding (Tensor): (N, d), where N is the number of authors
@@ -77,7 +78,15 @@ class General(nn.Module):
 
         author_embedding_new = self.au_GNN(author_embedding,self.author_adj)
         # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
-        paper_embedding_new = self.pa_GAT(paper_neighbor_embedding)
+        batch_paper_index = torch.tensor(batch_paper_index, 
+                                         dtype=torch.int64, 
+                                         device=author_embedding.device).unsqueeze(-1).unsqueeze(-1).repeat((1, paper_neighbor_embedding.shape[1], paper_neighbor_embedding.shape[-1]))
+        gat_embedding = torch.gather(paper_neighbor_embedding, 0, batch_paper_index)
+        gat_embedding = self.pa_GAT(gat_embedding)
+        paper_embedding_new = paper_embedding.scatter(0, torch.tensor(batch_paper_index, 
+                                                                    dtype=torch.int64, 
+                                                                    device=author_embedding.device).unsqueeze(-1).repeat(1, gat_embedding.shape[-1]), gat_embedding)
+        
         # author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
         interact_prob = torch.einsum("nd,md->nm", author_embedding_new, paper_embedding_new)
         interact_prob = torch.sigmoid(interact_prob)
