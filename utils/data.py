@@ -155,7 +155,7 @@ class Data(object):
             for i, x in paper_paper_map.items():
                 possible_idx = list(x)
                 random.shuffle(possible_idx)
-                idx = torch.LongTensor(possible_idx if len(possible_idx) <= sample_number else possible_idx[:sample_number], device=self.device)
+                idx = torch.tensor(possible_idx if len(possible_idx) <= sample_number else possible_idx[:sample_number], device=self.device, dtype=torch.int64)
 
                 gather_idx = idx.unsqueeze(-1).repeat((1, paper_feature.shape[-1]))
 
