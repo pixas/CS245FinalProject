@@ -53,7 +53,7 @@ class AcademicDataset(object):
         
         # data path end #
         self.sample_number = sample_number
-        self.n_authors, self.n_papers = self.author_cnt, self.paper_cnt
+
         self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
         random.shuffle(self.train_index)
         self.real_train_index = self.train_index[:int(len(self.train_index) * train_ratio)]
@@ -316,13 +316,13 @@ class AcademicDataset(object):
         pos_train_index = random.sample(self.real_train_index, pos_train_num)
 
         # sample negative
-        author_list = list(range(self.n_authors))
+        author_list = list(range(self.author_cnt))
         neg_train_authors = random.sample(author_list, neg_train_num)
         neg_train_index = []
         for neg_train_author in neg_train_authors:
             flag = False
             while not flag:
-                random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.n_papers, size=1)[0]
+                random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.paper_cnt, size=1)[0]
                 if random_paper not in self.author_paper_map[neg_train_author]:
                     neg_train_index.append([neg_train_author, random_paper - self.author_cnt])
                     flag = True
@@ -348,13 +348,13 @@ class AcademicDataset(object):
         pos_test_index = random.sample(self.real_test_index, pos_test_num)
 
         # sample negative
-        author_list = list(range(self.n_authors))
+        author_list = list(range(self.author_cnt))
         neg_test_authors = random.sample(author_list, neg_test_num)
         neg_test_index = []
         for neg_test_author in neg_test_authors:
             flag = False
             while not flag:
-                random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.n_papers, size=1)[0]
+                random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.paper_cnt, size=1)[0]
                 if random_paper not in self.author_paper_map[neg_test_author]:
                     neg_test_index.append([neg_test_author, random_paper - self.author_cnt])
                     flag = True

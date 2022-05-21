@@ -54,7 +54,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 data_generator = AcademicDataset(batch_size=args.batch_size, random_walk_length=args.rw_length, device=device, path=args.datapath)
 # pretrained_author_embedding = data_generator.author_embeddings
-pretrained_author_embedding = torch.arange(0, data_generator.n_authors, 1, device=device)
+pretrained_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
 pretrained_paper_embedding = data_generator.get_paper_embeddings()
 
 
@@ -243,12 +243,12 @@ if __name__ == '__main__':
     model = General(
         Pa_layers=args.pa_layers,
         Au_layers=args.au_layers,
-        paper_adj=data_generator.paper_adj_matrix,
-        author_adj=data_generator.author_adj_matrix,
+        paper_adj=data_generator.get_paper_adj_matrix(),
+        author_adj=data_generator.get_author_adj_matrix(),
         Paperdropout=args.gnn_dropout,
         Authordropout=args.gnn_dropout,
-        n_authors=data_generator.n_authors,
-        n_papers=data_generator.n_papers,
+        n_authors=data_generator.author_cnt,
+        n_papers=data_generator.paper_cnt,
         num_layers=args.NGCF_layers,
         NGCFembed_dim=args.embed_dim,
         dropoutNGCF=args.ngcf_dropout,
