@@ -31,7 +31,7 @@ data_generator = Data(batch_size=train_args.batch_size, random_walk_length=train
 pretrained_author_embedding = torch.arange(0, data_generator.n_authors, 1, device=device)
 pretrained_paper_embedding = data_generator.paper_embeddings
 
-
+paper_neighbor_embedding = data_generator.paper_paper_nei_embeddings
 
 @torch.no_grad()
 def evaluate_test_ann(model: General, test_file: str, output_dir: str):
@@ -39,10 +39,12 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     test_array: list = np.loadtxt(test_file, dtype=int, delimiter=' ').tolist()
     model.eval()
     author_path = paper_path = []
+    test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
     author_embedding, paper_embedding, interact_prob = model(
         pretrained_author_embedding, 
         pretrained_paper_embedding,
-
+        paper_neighbor_embedding,
+        test_papers
     )
 
     f = open(os.path.join(output_dir, output_file_name), 'w')
