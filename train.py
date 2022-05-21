@@ -126,12 +126,13 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
         epoch_total_precision, epoch_total_recall = 0, 0
         for batch_idx in range(1, n_test_batch + 1):
             author_path = paper_path = []
+            test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
             author_embedding, paper_embedding, interact_prob = model(
                 pretrained_author_embedding, 
                 pretrained_paper_embedding,
-                paper_neighbor_embedding
+                paper_neighbor_embedding,
+                test_papers
             )
-            test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
             test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
             
             epoch_loss += test_loss
