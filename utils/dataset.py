@@ -53,15 +53,16 @@ class AcademicDataset(object):
         
         # data path end #
         self.sample_number = sample_number
-
+        self.author_paper_map = self.get_author_paper_map()
+        self._paper_paper_map = self.get_paper_paper_map()
+        self._author_author_map = self.get_author_author_map()
+        
         self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
         random.shuffle(self.train_index)
         self.real_train_index = self.train_index[:int(len(self.train_index) * train_ratio)]
         self.real_test_index = self.train_index[int(len(self.train_index) * train_ratio):]
         self.total_train_cnt = len(self.train_index)
 
-        self._paper_paper_map = self.get_paper_paper_map()
-        self._author_author_map = self.get_author_author_map()
         
         self.paper_maximum_connection = max(len(list(x)) for i, x in self._paper_paper_map.items())
         self.author_maximum_connection = max(len(list(x)) for i, x in self._author_author_map.items())
@@ -250,56 +251,56 @@ class AcademicDataset(object):
     
         return author_paper_map
 
-    def sample(self) -> Tuple[Tensor, Tensor]:
-        """
-        Sample two random walk path starting from two random nodes(author & paper)
-        Returns:
-            author_path (Tensor): (random_walk_length, 1)
-            paper_path (Tensor): (random_walk_length, 1)
-        """
-        author_path = self.generate_random_walk_author(self.random_walk_length)
-        paper_path = self.generate_random_walk_paper(self.random_walk_length)
-        author_path = author_path.to(self.device)
-        paper_path = paper_path.to(self.device)
-        return author_path, paper_path
+    # def sample(self) -> Tuple[Tensor, Tensor]:
+    #     """
+    #     Sample two random walk path starting from two random nodes(author & paper)
+    #     Returns:
+    #         author_path (Tensor): (random_walk_length, 1)
+    #         paper_path (Tensor): (random_walk_length, 1)
+    #     """
+    #     author_path = self.generate_random_walk_author(self.random_walk_length)
+    #     paper_path = self.generate_random_walk_paper(self.random_walk_length)
+    #     author_path = author_path.to(self.device)
+    #     paper_path = paper_path.to(self.device)
+    #     return author_path, paper_path
     
-    def generate_random_walk_author(self, t: int) -> Tensor:
-        """Generate the random walk for all authors in coauthor network.
+    # def generate_random_walk_author(self, t: int) -> Tensor:
+    #     """Generate the random walk for all authors in coauthor network.
 
-        Args:
-            t (int): the length of random walk (t << N).
-        Returns:
-            random_walk_matrix (Tensor): (self.author_cnt, t)
-        """
-        random_walk_matrix = torch.zeros(size=(t, 1), dtype=torch.int64)
-        start_author = random.choice(range(0, self.author_cnt))
-        random_walk_matrix[0, 0] = start_author
-        pre = start_author
-        for i in range(1, t):
-            cur = random.choice(list(self.author_author_map[pre]))
-            random_walk_matrix[i, 0] = cur
-            pre = cur
-        random_walk_matrix = random_walk_matrix.to(self.device)
-        return random_walk_matrix
+    #     Args:
+    #         t (int): the length of random walk (t << N).
+    #     Returns:
+    #         random_walk_matrix (Tensor): (self.author_cnt, t)
+    #     """
+    #     random_walk_matrix = torch.zeros(size=(t, 1), dtype=torch.int64)
+    #     start_author = random.choice(range(0, self.author_cnt))
+    #     random_walk_matrix[0, 0] = start_author
+    #     pre = start_author
+    #     for i in range(1, t):
+    #         cur = random.choice(list(self.author_author_map[pre]))
+    #         random_walk_matrix[i, 0] = cur
+    #         pre = cur
+    #     random_walk_matrix = random_walk_matrix.to(self.device)
+    #     return random_walk_matrix
 
-    def generate_random_walk_paper(self, t: int) -> Tensor:
-        """Generate the random walk for all papers in citation network.
+    # def generate_random_walk_paper(self, t: int) -> Tensor:
+    #     """Generate the random walk for all papers in citation network.
 
-        Args:
-            t (int): the length of random walk (t << M).
-        Returns:
-            random_walk_matrix (Tensor): (t, 1)
-        """
-        random_walk_matrix = torch.zeros(size=(t, 1), dtype=torch.int64)
-        start_paper = random.choice(range(0, self.paper_cnt))
-        random_walk_matrix[0, 0] = start_paper
-        pre = start_paper
-        for i in range(1, t):
-            cur = random.choice(list(self.paper_paper_map[pre]))
-            random_walk_matrix[i, 0] = cur
-            pre = cur
-        random_walk_matrix = random_walk_matrix.to(self.device)
-        return random_walk_matrix
+    #     Args:
+    #         t (int): the length of random walk (t << M).
+    #     Returns:
+    #         random_walk_matrix (Tensor): (t, 1)
+    #     """
+    #     random_walk_matrix = torch.zeros(size=(t, 1), dtype=torch.int64)
+    #     start_paper = random.choice(range(0, self.paper_cnt))
+    #     random_walk_matrix[0, 0] = start_paper
+    #     pre = start_paper
+    #     for i in range(1, t):
+    #         cur = random.choice(list(self.paper_paper_map[pre]))
+    #         random_walk_matrix[i, 0] = cur
+    #         pre = cur
+    #     random_walk_matrix = random_walk_matrix.to(self.device)
+    #     return random_walk_matrix
     
     def sample_train(self) -> Tuple[List[List[int]], List[List[int]], List[int], List[int]]:
         """ Sample a batch from the train dataset.
@@ -311,7 +312,7 @@ class AcademicDataset(object):
         """
         pos_train_num = self.batch_size // 2
         neg_train_num = self.batch_size - pos_train_num
-
+        
         # sample positive
         pos_train_index = random.sample(self.real_train_index, pos_train_num)
 
