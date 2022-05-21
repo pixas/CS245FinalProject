@@ -379,12 +379,13 @@ class Data(object):
     def sample_train(self) -> Tuple[List[List[int]], List[List[int]], List[int], List[int]]:
         """ Sample a batch from the train dataset.
         Returns:
-            pos_train_index (List[List[int]]): (batch_size // 2, 2)
-            neg_train_index (List[List[int]]): (batch_size // 2, 2)
+            pos_train_index (List[List[int]]): (7/8 * batch_size, 2)
+            neg_train_index (List[List[int]]): (1/8 * batch_size, 2)
             train_authors (List[int])
             train_papers (List[int])
         """
-        pos_train_num = self.batch_size // 2
+        assert self.batch_size % 8 == 0
+        pos_train_num = self.batch_size // 8 * 7
         neg_train_num = self.batch_size - pos_train_num
 
         # sample positive
@@ -411,12 +412,13 @@ class Data(object):
     def sample_test(self) -> Tuple[List[List[int]], List[List[int]], List[int], List[int]]:
         """ Sample a batch from the test dataset.
         Returns:
-            pos_test_index (List[List[int]]): (batch_size // 2, 2)
-            neg_test_index (List[List[int]]): (batch_size // 2, 2)
+            pos_test_index (List[List[int]]): (7/8 * batch_size, 2)
+            neg_test_index (List[List[int]]): (1/8 * batch_size, 2)
             test_authors (List[int])
             test_papers (List[int])
         """
-        pos_test_num = self.batch_size // 2
+        assert self.batch_size % 8 == 0
+        pos_test_num = self.batch_size // 8 * 7
         neg_test_num = self.batch_size - pos_test_num
 
         # sample positive
