@@ -316,26 +316,23 @@ class AcademicDataset(object):
         neg_train_num = self.batch_size - pos_train_num
         
         # sample positive
-        sample_list = self.real_train_index.copy()
-        random.shuffle(sample_list)
-        pos_train_index = sample_list[:pos_train_num]
+        pos_train_index = random.sample(self.real_train_index, pos_train_num)
 
         # sample negative
         author_list = list(range(self.author_cnt))
-        random.shuffle(author_list)
-        neg_train_authors = author_list[:neg_train_num]
-        neg_train_index = set()
+        neg_train_authors = random.sample(author_list, neg_train_num)
+        neg_train_index = []
         for neg_train_author in neg_train_authors:
             flag = False
             while not flag:
                 random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.paper_cnt, size=1)[0]
-                if random_paper not in self.author_paper_map[neg_train_author] and random_paper not in neg_train_index:
-                    neg_train_index.add((neg_train_author, random_paper - self.author_cnt))
+                if random_paper not in self.author_paper_map[neg_train_author]:
+                    neg_train_index.append([neg_train_author, random_paper - self.author_cnt])
                     flag = True
-        neg_train_index = list(neg_train_index)
+
         # get authors and papers
-        train_authors = [pos[0] for pos in pos_train_index] + [neg[0] for neg in neg_train_index]
-        train_papers = [pos[0] for pos in pos_train_index] + [neg[0] for neg in neg_train_index]
+        train_authors = list(set([pos[0] for pos in pos_train_index] + [neg[0] for neg in neg_train_index]))
+        train_papers = list(set([pos[1] for pos in pos_train_index] + [neg[1] for neg in neg_train_index]))
         
 
         return pos_train_index, neg_train_index, train_authors, train_papers
