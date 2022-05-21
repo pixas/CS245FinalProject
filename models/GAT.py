@@ -51,7 +51,7 @@ class GAT(nn.Module):
             GATBlock(embed_dim, num_heads, dropout)
         for i in range(stack_layers)])
     
-    def forwar(self, x: Tensor):
+    def forward(self, x: Tensor):
         for i, layer in enumerate(self.layers):
             x = layer(x)
         
