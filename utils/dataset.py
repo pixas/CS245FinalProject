@@ -69,24 +69,25 @@ class AcademicDataset(object):
         
         
 
-    def get_batch_paper_neighbor(self, train_paper_index: List[int]):
+    def get_batch_paper_neighbor(self, paper_feature: torch.Tensor, train_paper_index: List[int]):
 
-        paper_feature = self.get_paper_embeddings()
+
         sample_number = self.sample_number
-        neighbor_embedding = torch.zeros((self.batch_size, sample_number + 1, paper_feature.shape[-1]), dtype=paper_feature.dtype)
+        neighbor_embedding = torch.zeros((self.batch_size, sample_number + 1, paper_feature.shape[-1]), dtype=paper_feature.dtype).to(self.device)
         
         for j, value in enumerate(train_paper_index):
             possible_idx = list(self._paper_paper_map[value])
             random.shuffle(possible_idx)
             idx = torch.tensor(
                 possible_idx if len(possible_idx) <= sample_number else possible_idx[:sample_number],
-                dtype=torch.int64
+                dtype=torch.int64,
+                device=self.device
             )
             gather_idx = idx.unsqueeze(-1).repeat((1, paper_feature.shape[-1]))
             gathered_embedding = paper_feature.gather(0, gather_idx)
             neighbor_embedding[j] = neighbor_embedding[j].scatter(
                 0,
-                torch.arange(1, len(idx) + 1, 1, dtype=torch.int64).unsqueeze(-1).repeat((1, paper_feature.shape[-1])),
+                torch.arange(1, len(idx) + 1, 1, dtype=torch.int64, device=self.device).unsqueeze(-1).repeat((1, paper_feature.shape[-1])),
                 gathered_embedding
             )
             neighbor_embedding[j, 0] = paper_feature[value]
