@@ -130,7 +130,7 @@ def save_checkpoint(model: General, args: argparse.ArgumentParser, save_metric: 
 def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int):
     n_test_batch = len(data_generator.real_test_index) // (data_generator.batch_size // 2) + 1
     model.eval()
-    author_embedding = pretrained_author_embedding
+
     paper_embedding = pretrained_paper_embedding
     with tqdm(total=n_test_batch) as t:
         t.set_description(f"Test Epoch {epoch_idx}")
@@ -142,13 +142,13 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
             # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
             paper_neighbor_embedding= []
             author_embedding, paper_embedding, interact_prob = model(
-                author_embedding, 
+                pretrained_author_embedding, 
                 paper_embedding,
                 paper_neighbor_embedding,
                 test_papers,
                 test_authors
             )
-            model.use_pretrain = True
+
             test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
             
             epoch_loss += test_loss
@@ -180,7 +180,7 @@ def train(model: General, optimizer, args):
             model.load_state_dict(parameter_dict)
     else:
         begin_epoch = 1
-    author_embedding = pretrained_author_embedding
+
     paper_embedding = pretrained_paper_embedding
     
     for epoch_idx in range(begin_epoch, epoch + 1):
@@ -198,7 +198,7 @@ def train(model: General, optimizer, args):
                 # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, train_papers)
                 paper_neighbor_embedding = []
                 author_embedding, paper_embedding, interact_prob = model(
-                    author_embedding, 
+                    pretrained_author_embedding, 
                     paper_embedding,
                     paper_neighbor_embedding,
                     train_papers,
