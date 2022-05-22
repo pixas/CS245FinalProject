@@ -204,7 +204,7 @@ def train(model: General, optimizer, args):
                     train_papers,
                     train_authors
                 )
-                model.use_pretrain = True
+                
                 # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()
                 loss, mf_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, train_pos_index, train_neg_index, train_authors, train_papers)
                 
