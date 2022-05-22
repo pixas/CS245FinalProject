@@ -106,6 +106,7 @@ def save_checkpoint(model: General, args: argparse.ArgumentParser, save_metric: 
         torch.save(cur_save_info, os.path.join(save_dir, "checkpoint{}.pt".format(epoch)))
     else:
         if len(all_ckpts) - 2 >= keep_last_epochs:
+            all_ckpts = list(filter(lambda x: x.begin_with('checkpoint'), all_ckpts))
             all_ckpts.remove('checkpoint_best.pt')
             all_ckpts.remove('checkpoint_last.pt')
             all_ckpts.sort(key=cmp_to_key(lambda x, y: int(x[10:-3]) - int(y[10:-3])))
