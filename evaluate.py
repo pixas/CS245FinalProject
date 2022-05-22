@@ -39,7 +39,7 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     model.eval()
     author_path = paper_path = []
     test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
-    # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
+    paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
     paper_neighbor_embedding = []
     author_embedding, paper_embedding, interact_prob = model(
         pretrained_author_embedding, 
