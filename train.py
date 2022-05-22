@@ -130,6 +130,8 @@ def save_checkpoint(model: General, args: argparse.ArgumentParser, save_metric: 
 def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int):
     n_test_batch = len(data_generator.real_test_index) // (data_generator.batch_size // 2) + 1
     model.eval()
+    author_embedding = pretrained_author_embedding
+    paper_embedding = pretrained_paper_embedding
     with tqdm(total=n_test_batch) as t:
         t.set_description(f"Test Epoch {epoch_idx}")
         epoch_loss, epoch_mf_loss, epoch_emb_loss = 0, 0, 0
@@ -137,11 +139,11 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
         for batch_idx in range(1, n_test_batch + 1):
 
             test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
-            paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
-            # paper_neighbor_embedding= []
+            # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
+            paper_neighbor_embedding= []
             author_embedding, paper_embedding, interact_prob = model(
-                pretrained_author_embedding, 
-                pretrained_paper_embedding,
+                author_embedding, 
+                paper_embedding,
                 paper_neighbor_embedding,
                 test_papers,
                 test_authors
@@ -177,6 +179,9 @@ def train(model: General, optimizer, args):
             model.load_state_dict(parameter_dict)
     else:
         begin_epoch = 1
+    author_embedding = pretrained_author_embedding
+    paper_embedding = pretrained_paper_embedding
+    
     for epoch_idx in range(begin_epoch, epoch + 1):
         n_train_batch = len(data_generator.real_train_index) // (data_generator.batch_size // 2) + 1
         model.train()
@@ -189,11 +194,11 @@ def train(model: General, optimizer, args):
                 # author_path, paper_path = data_generator.sample()
 
                 train_pos_index, train_neg_index, train_authors, train_papers = data_generator.sample_train()
-                paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, train_papers)
-                # paper_neighbor_embedding = []
+                # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, train_papers)
+                paper_neighbor_embedding = []
                 author_embedding, paper_embedding, interact_prob = model(
-                    pretrained_author_embedding, 
-                    pretrained_paper_embedding,
+                    author_embedding, 
+                    paper_embedding,
                     paper_neighbor_embedding,
                     train_papers,
                     train_authors
