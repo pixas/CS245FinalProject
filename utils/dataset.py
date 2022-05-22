@@ -66,7 +66,20 @@ class AcademicDataset(object):
         
         self.paper_maximum_connection = max(len(list(x)) for i, x in self._paper_paper_map.items())
         self.author_maximum_connection = max(len(list(x)) for i, x in self._author_author_map.items())
+
+    
+    def get_paper_connect_author(self):
+        paper_emb = self.get_paper_embeddings()
+        paper_emb = paper_emb.to(torch.device('cpu'))
+        res = []
+        for author in range(self.author_cnt):
+            nei_paper = paper_emb[np.array(list(self.author_paper_map[author]))-self.author_cnt]
+            if len(nei_paper) == 0:
+                res.append(np.zeros(paper_emb.shape[1]))
+            else:
+                res.append(np.average(nei_paper,0))
         
+        return torch.tensor(np.array(res),dtype=torch.float,device=self.device)
         
 
     def get_batch_paper_neighbor(self, paper_feature: torch.Tensor, train_paper_index: List[int]):

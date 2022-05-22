@@ -13,7 +13,7 @@ from functools import cmp_to_key
 TRAIN_FILE_TXT = 'data/bipartite_train.txt'
 def parse_args():
     parser = argparse.ArgumentParser(description="Run General")
-    parser.add_argument('save_dir', type=str, default='checkpoints', help='Directory to save checkpoints')
+    parser.add_argument('--save_dir', type=str, default='checkpoints', help='Directory to save checkpoints')
     
     # Optimization Parameters
     parser.add_argument('--module_type', nargs='?', default='LSTM', help='Module in coauthor and citation network')
@@ -56,6 +56,7 @@ data_generator = AcademicDataset(batch_size=args.batch_size, random_walk_length=
 # pretrained_author_embedding = data_generator.author_embeddings
 pretrained_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
 pretrained_paper_embedding = data_generator.get_paper_embeddings()
+paper_connect_author = data_generator.get_paper_connect_author()
 
 
 def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index, neg_index, authors, papers):
@@ -146,9 +147,7 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
             author_embedding, paper_embedding, interact_prob = model(
                 pretrained_author_embedding, 
                 pretrained_paper_embedding,
-                paper_neighbor_embedding,
-                test_papers,
-                test_authors
+                paper_connect_author
             )
 
             test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
@@ -202,9 +201,7 @@ def train(model: General, optimizer, args):
                 author_embedding, paper_embedding, interact_prob = model(
                     pretrained_author_embedding, 
                     pretrained_paper_embedding,
-                    paper_neighbor_embedding,
-                    train_papers,
-                    train_authors
+                    paper_connect_author
                 )
                 
                 # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()

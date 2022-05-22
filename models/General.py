@@ -52,8 +52,9 @@ class General(nn.Module):
         self.paper_adj = paper_adj
         self.author_adj = author_adj
         
-        self.au_GNN = GNN(author_dim,author_dim,author_dim,Au_layers,Authordropout,True)
-        self.pa_GNN = GNN(paper_dim,paper_dim,paper_dim,Pa_layers,Paperdropout,True)
+        self.au_GNN = GNN(author_dim,author_dim,author_dim,Au_layers,Authordropout,
+        paper_dim,True)
+        # self.pa_GNN = GNN(paper_dim,paper_dim,paper_dim,Pa_layers,Paperdropout,True)
         # self.pa_sage = GraphSage(embed_dim=paper_dim, stack_layers=Pa_layers, dropout=Paperdropout)
         # self.pa_GAT = GAT(paper_dim, args.num_heads, Paperdropout, args.gat_layers)
         # self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
@@ -63,9 +64,7 @@ class General(nn.Module):
     
     def forward(self, author_embedding: Tensor,
                 paper_embedding: Tensor,
-                paper_neighbor_embedding: Tensor,
-                batch_paper_index: List[int],
-                batch_author_index: List[int]=None):
+                paper_connect_author:Tensor):
         """update General model
         Args:
             author_embedding (Tensor): (N, d), where N is the number of authors
@@ -76,8 +75,9 @@ class General(nn.Module):
         if not self.use_pretrain:
             author_embedding = self.auther_emb(author_embedding)
 
-        author_embedding_new = self.au_GNN(author_embedding,self.author_adj)
-        paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
+        paper_embedding_new = paper_embedding
+        author_embedding_new = self.au_GNN(author_embedding,self.author_adj,paper_connect_author)
+        # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
 
         # gat_embedding = self.pa_GAT(paper_neighbor_embedding)
         # paper_embedding_sage = self.pa_sage(paper_neighbor_embedding)
