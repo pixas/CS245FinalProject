@@ -219,7 +219,7 @@ def train(model: General, optimizer, args):
                 loss, mf_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, train_pos_index, train_neg_index, train_authors, train_papers)
                 
                 optimizer.zero_grad()
-                loss.backward()
+                loss.backward(retain_graph=True)
                 optimizer.step()
 
                 epoch_loss += loss
