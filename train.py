@@ -164,7 +164,7 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
     return test_loss, test_mf_loss, test_total_precision, test_total_recall
 
 
-def train(model, optimizer, args):
+def train(model: General, optimizer, args):
 
     epoch = args.epoch
     begin_epoch = 1
@@ -181,6 +181,7 @@ def train(model, optimizer, args):
         n_train_batch = len(data_generator.real_train_index) // (data_generator.batch_size // 2) + 1
         with tqdm(total=n_train_batch) as t:
             t.set_description(f"Train Epoch {epoch_idx}")
+            model.train()
             epoch_loss, epoch_mf_loss, epoch_emb_loss = 0, 0, 0
             epoch_total_precision, epoch_total_recall = 0, 0
 
