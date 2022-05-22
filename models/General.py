@@ -80,11 +80,11 @@ class General(nn.Module):
         # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
 
         # gat_embedding = self.pa_GAT(paper_neighbor_embedding)
-        # paper_embedding_sage = self.pa_sage(paper_neighbor_embedding)
-        # paper_embedding_new = paper_embedding.scatter(0, torch.tensor(batch_paper_index, 
-        #                                                             dtype=torch.int64, 
-        #                                                             device=author_embedding.device).unsqueeze(-1).repeat(1, paper_embedding.shape[-1]), paper_embedding_sage)
-        paper_embedding_new = paper_embedding
+        paper_embedding_sage = self.pa_sage(paper_neighbor_embedding)
+        paper_embedding_new = paper_embedding.scatter(0, torch.tensor(batch_paper_index, 
+                                                                    dtype=torch.int64, 
+                                                                    device=author_embedding.device).unsqueeze(-1).repeat(1, paper_embedding.shape[-1]), paper_embedding_sage)
+        # paper_embedding_new = paper_embedding
         # author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
         interact_prob = torch.einsum("nd,md->nm", author_embedding_new, paper_embedding_new)
         interact_prob = torch.sigmoid(interact_prob)
