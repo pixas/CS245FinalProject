@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from torch import Tensor 
 from argparse import ArgumentParser
 from torch_sparse import SparseTensor
-from models.GAT import GAT
+from models.GraphAggregate import GAT, GraphSage
 from models.NGCF import NGCF
 from models.random_walk import RandomWalk
 from models.GCN import GNN
@@ -54,7 +54,7 @@ class General(nn.Module):
         
         self.au_GNN = GNN(author_dim,author_dim,author_dim,Au_layers,Authordropout,True)
         # self.pa_GNN = GNN(paper_dim,paper_dim,paper_dim,Pa_layers,Paperdropout,True)
-        
+        self.pa_sage = GraphSage(embed_dim=paper_dim, stack_layers=Pa_layers, dropout=Paperdropout)
         # self.pa_GAT = GAT(paper_dim, args.num_heads, Paperdropout, args.gat_layers)
         # self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
         #          num_layers, NGCFembed_dim, paper_dim, author_dim,
@@ -80,11 +80,11 @@ class General(nn.Module):
         # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
 
         # gat_embedding = self.pa_GAT(paper_neighbor_embedding)
-
-        # paper_embedding_new = paper_embedding.scatter(0, torch.tensor(batch_paper_index, 
-        #                                                             dtype=torch.int64, 
-        #                                                             device=author_embedding.device).unsqueeze(-1).repeat(1, gat_embedding.shape[-1]), gat_embedding)
-        paper_embedding_new = paper_embedding
+        paper_embedding_sage = self.pa_sage(paper_neighbor_embedding)
+        paper_embedding_new = paper_embedding.scatter(0, torch.tensor(batch_paper_index, 
+                                                                    dtype=torch.int64, 
+                                                                    device=author_embedding.device).unsqueeze(-1).repeat(1, paper_embedding.shape[-1]), paper_embedding_sage)
+        # paper_embedding_new = paper_embedding
         # author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
         interact_prob = torch.einsum("nd,md->nm", author_embedding_new, paper_embedding_new)
         interact_prob = torch.sigmoid(interact_prob)

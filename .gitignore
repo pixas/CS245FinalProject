@@ -40,7 +40,7 @@ data/
 pip-log.txt
 pip-delete-this-directory.txt
 checkpoints/
-13_ShuyangJiang.csv
+13_ShuyangJiang*
 # Unit test / coverage reports
 htmlcov/
 .tox/

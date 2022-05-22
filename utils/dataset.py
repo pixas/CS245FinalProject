@@ -80,7 +80,7 @@ class AcademicDataset(object):
             possible_idx = list(self._paper_paper_map[value])
             random.shuffle(possible_idx)
             idx = torch.tensor(
-                possible_idx if len(possible_idx) <= sample_number else possible_idx[:sample_number],
+                random.sample(possible_idx, sample_number) if len(possible_idx) < sample_number else possible_idx[:sample_number],
                 dtype=torch.int64,
                 device=self.device
             )

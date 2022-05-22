@@ -56,3 +56,33 @@ class GAT(nn.Module):
             x = layer(x)
         
         return x[:, 0, :]
+
+
+class GraphSage(nn.Module):
+    def __init__(self, embed_dim: int,
+                 stack_layers: int,
+                 dropout: int,
+                 aggr_way: str = 'LSTM') -> None:
+        super(GraphSage, self).__init__()
+        self.stack_layers = stack_layers
+        self.dropout = dropout
+        if aggr_way == 'LSTM':
+            self.lstm = nn.LSTM(input_size=embed_dim,
+                                 hidden_size=embed_dim,
+                                 num_layers=self.stack_layers,
+                                 batch_first=True,
+                                 bidirectional=True,
+                                 dropout=self.dropout)
+            
+            pass
+        else:
+            raise NotImplementedError
+
+        self.act = nn.ReLU()
+    
+    def forward(self, x: Tensor):
+        # x: [B, 1 + #neighbor, d]
+        x, (_, _) = self.lstm(x)
+        x = x.reshape(x.shape[0], x.shape[1], self.stack_layers, -1)
+        x = torch.max(x, dim=-2)
+        return x[:, 0, :]
