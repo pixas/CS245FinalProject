@@ -179,9 +179,9 @@ def train(model: General, optimizer, args):
         begin_epoch = 1
     for epoch_idx in range(begin_epoch, epoch + 1):
         n_train_batch = len(data_generator.real_train_index) // (data_generator.batch_size // 2) + 1
+        model.train()
         with tqdm(total=n_train_batch) as t:
             t.set_description(f"Train Epoch {epoch_idx}")
-            model.train()
             epoch_loss, epoch_mf_loss, epoch_emb_loss = 0, 0, 0
             epoch_total_precision, epoch_total_recall = 0, 0
 
