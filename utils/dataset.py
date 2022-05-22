@@ -37,6 +37,7 @@ class AcademicDataset(object):
         self.bipartite_graph_test_path = f'{path}/bipartite_test_ann.txt'
         self.author_feature_path = f'{path}/author_vec.pkl'
         self.paper_feature_path = f'{path}/feature.pkl'
+        self.paper_mask = f'{path}/paper_mask.npy'
 
         self.author_adj_path = f'{path}/author_adj.pkl'
         self.author_author_map_path = f'{path}/author_author_map.pkl'
@@ -54,7 +55,7 @@ class AcademicDataset(object):
         # data path end #
         self.sample_number = sample_number
         self.author_paper_map = self.get_author_paper_map()
-        self._paper_paper_map = self.get_paper_paper_map()
+        self._paper_paper_map,self.paper_mask = self.get_paper_paper_map()
         self._author_author_map = self.get_author_author_map()
         
         self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
@@ -64,8 +65,8 @@ class AcademicDataset(object):
         self.total_train_cnt = len(self.train_index)
 
         
-        self.paper_maximum_connection = max(len(list(x)) for i, x in self._paper_paper_map.items())
-        self.author_maximum_connection = max(len(list(x)) for i, x in self._author_author_map.items())
+        # self.paper_maximum_connection = max(len(list(x)) for i, x in self._paper_paper_map.items())
+        # self.author_maximum_connection = max(len(list(x)) for i, x in self._author_author_map.items())
 
     
     def get_paper_connect_author(self):
@@ -159,8 +160,9 @@ class AcademicDataset(object):
         with open(self.paper_paper_map_path, 'rb') as f:
             paper_paper_map = pickle.load(f)
         print(f'Load paper-paper map from {self.paper_paper_map_path}, time cost: {time.time() - t1: .3f}s')
-      
-        return paper_paper_map
+        paper_mask = np.load(self.paper_mask)
+
+        return paper_paper_map,paper_mask
 
     def get_paper_adj_matrix(self) -> SparseTensor:
         """Returns the adjacency matrix of the citation network among papers.

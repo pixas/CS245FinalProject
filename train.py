@@ -57,6 +57,9 @@ data_generator = AcademicDataset(batch_size=args.batch_size, random_walk_length=
 pretrained_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
 pretrained_paper_embedding = data_generator.get_paper_embeddings()
 paper_connect_author = data_generator.get_paper_connect_author()
+paper_mask = data_generator.paper_mask
+paper_paper_map = data_generator._paper_paper_map
+paper_mask = torch.tensor(paper_mask,dtype=torch.float32,device=device)
 
 
 def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index, neg_index, authors, papers):
@@ -147,7 +150,10 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
             author_embedding, paper_embedding, interact_prob = model(
                 pretrained_author_embedding, 
                 pretrained_paper_embedding,
-                paper_connect_author
+                test_authors,
+                test_papers,
+                paper_paper_map,
+                paper_mask
             )
 
             test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
@@ -184,6 +190,8 @@ def train(model: General, optimizer, args):
 
     # paper_embedding = pretrained_paper_embedding
     
+
+
     for epoch_idx in range(begin_epoch, epoch + 1):
         n_train_batch = len(data_generator.real_train_index) // (data_generator.batch_size // 2) + 1
         model.train()
@@ -199,10 +207,13 @@ def train(model: General, optimizer, args):
                 # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, train_papers)
                 paper_neighbor_embedding = []
                 author_embedding, paper_embedding, interact_prob = model(
-                    pretrained_author_embedding, 
-                    pretrained_paper_embedding,
-                    paper_connect_author
-                )
+                pretrained_author_embedding, 
+                pretrained_paper_embedding,
+                train_authors,
+                train_papers,
+                paper_paper_map,
+                paper_mask
+            )
                 
                 # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()
                 loss, mf_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, train_pos_index, train_neg_index, train_authors, train_papers)

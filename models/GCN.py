@@ -1,6 +1,6 @@
 import torch
 import math
-
+import torch.nn as nn
 import torch.nn.functional as F
 
 from torch.nn.parameter import Parameter
@@ -46,7 +46,7 @@ class GraphConv(torch.nn.Module):
 
 class GNN(torch.nn.Module):
     def __init__(self, input_dim, hidden_dim, output_dim, num_layers,
-                 dropout, return_embeds=False):
+                 dropout ,return_embeds=False):
         # TODO: Implement a function that initializes self.convs, 
         # self.bns, and self.softmax.
 
@@ -64,7 +64,7 @@ class GNN(torch.nn.Module):
         self.bns = torch.nn.ModuleList(self.bns)
         # The log softmax layer
         self.softmax = torch.nn.LogSoftmax(1)
-
+        
         # Probability of an element getting zeroed
         self.dropout = dropout
 
@@ -76,20 +76,22 @@ class GNN(torch.nn.Module):
             conv.reset_parameters()
         for bn in self.bns:
             bn.reset_parameters()
+        nn.init.normal_(self.W)
+        
 
     def forward(self, x, adj_t):
         out = None
-        x = self.convs[0](x,adj_t)
+        x = self.convs[0](x,adj_t) 
         for i in range(len(self.bns)-1):
             x = self.bns[i](x)
             x = F.dropout(x,self.dropout,training=self.training)
             x = F.relu(x)
-            x = self.convs[i+1](x,adj_t)
+            x = self.convs[i+1](x,adj_t) 
         
         x = self.bns[-1](x)
         x = F.relu(x)
         x = F.dropout(x,self.dropout,training=self.training)
-        x = self.convs[-1](x,adj_t)
+        x = self.convs[-1](x,adj_t) 
         if self.return_embeds:
             out = x 
         else:
