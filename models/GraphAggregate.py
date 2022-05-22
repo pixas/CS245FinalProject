@@ -84,5 +84,5 @@ class GraphSage(nn.Module):
         # x: [B, 1 + #neighbor, d]
         x, (_, _) = self.lstm(x)
         x = x.reshape(x.shape[0], x.shape[1], self.stack_layers, -1)
-        x = torch.max(x, dim=-2)
+        x, _ = torch.max(x, dim=-2)
         return x[:, 0, :]
