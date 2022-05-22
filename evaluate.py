@@ -40,7 +40,7 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     test_array: list = np.loadtxt(test_file, dtype=int, delimiter=' ').tolist()
     model.eval()
     # author_embedding = pretrained_author_embedding
-    paper_embedding = pretrained_paper_embedding
+    # paper_embedding = pretrained_paper_embedding
     with tqdm(total=n_test_batch) as t:
         t.set_description(f"Evaluation")
 
@@ -51,7 +51,7 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
             # paper_neighbor_embedding= []
             author_embedding, paper_embedding, interact_prob = model(
                 pretrained_author_embedding, 
-                paper_embedding,
+                pretrained_paper_embedding,
                 paper_neighbor_embedding,
                 test_papers,
                 test_authors
