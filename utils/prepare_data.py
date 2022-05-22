@@ -110,35 +110,35 @@ class PrepareData(object):
         print(f'Build author adjacency matrix, time cost: {time.time() - t1: .3f}s')
         with open(self.author_adj_path, 'wb') as f:
             pickle.dump(author_adj_matrix, f)
-        author_adj_matrix = author_adj_matrix.to(self.device,dtype=torch.float)
+
         return author_adj_matrix
 
-    def get_paper_paper_nei(self):
+    # def get_paper_paper_nei(self):
 
-        t1 = time.time()
+    #     t1 = time.time()
         
-        paper_feature = self.paper_embeddings
-        paper_paper_map = self.paper_paper_map
+    #     paper_feature = self.paper_embeddings
+    #     paper_paper_map = self.paper_paper_map
 
-        # max_connection = max(len(list(x)) for i, x in paper_paper_map.items())
-        sample_number = 64
+    #     # max_connection = max(len(list(x)) for i, x in paper_paper_map.items())
+    #     sample_number = 64
 
-        neighbor_embedding = torch.zeros((self.paper_cnt, sample_number + 1, paper_feature.shape[-1]), dtype=paper_feature.dtype)
-        for i, x in paper_paper_map.items():
-            possible_idx = list(x)
-            random.shuffle(possible_idx)
-            idx = torch.tensor(possible_idx if len(possible_idx) <= sample_number else possible_idx[:sample_number], dtype=torch.int64)
+    #     neighbor_embedding = torch.zeros((self.paper_cnt, sample_number + 1, paper_feature.shape[-1]), dtype=paper_feature.dtype)
+    #     for i, x in paper_paper_map.items():
+    #         possible_idx = list(x)
+    #         random.shuffle(possible_idx)
+    #         idx = torch.tensor(possible_idx if len(possible_idx) <= sample_number else possible_idx[:sample_number], dtype=torch.int64)
 
-            gather_idx = idx.unsqueeze(-1).repeat((1, paper_feature.shape[-1]))
+    #         gather_idx = idx.unsqueeze(-1).repeat((1, paper_feature.shape[-1]))
 
-            gathered_embedding = paper_feature.gather(0, gather_idx)
-            neighbor_embedding[i] = neighbor_embedding[i].scatter(0, torch.arange(1, len(idx) + 1, 1, dtype=torch.int64).unsqueeze(-1).repeat((1, paper_feature.shape[-1])), gathered_embedding)
-            neighbor_embedding[i, 0] = paper_feature[i]
+    #         gathered_embedding = paper_feature.gather(0, gather_idx)
+    #         neighbor_embedding[i] = neighbor_embedding[i].scatter(0, torch.arange(1, len(idx) + 1, 1, dtype=torch.int64).unsqueeze(-1).repeat((1, paper_feature.shape[-1])), gathered_embedding)
+    #         neighbor_embedding[i, 0] = paper_feature[i]
 
-        print(f'Build paper paper neighborhood, time cost: {time.time() - t1:.3f}')
-        torch.save(neighbor_embedding, self.paper_paper_nei_path)
-            # with open(self.paper_paper_nei_path, 'wb') as f:
-            #     pickle.dump(neighbor_embedding, f)
+    #     print(f'Build paper paper neighborhood, time cost: {time.time() - t1:.3f}')
+    #     torch.save(neighbor_embedding, self.paper_paper_nei_path)
+    #         # with open(self.paper_paper_nei_path, 'wb') as f:
+    #         #     pickle.dump(neighbor_embedding, f)
         
 
                 
@@ -160,7 +160,7 @@ class PrepareData(object):
             for line in lines:
                 for paper, cited_paper in [line.strip().split(' ')]:
                     paper_paper_map[int(paper)].add(int(cited_paper))
-                    paper_paper_map[int(cited_paper)].add(int(paper))
+
         print(f'Build paper-paper map, time cost: {time.time() - t1: .3f}s')
         with open(self.paper_paper_map_path, 'wb') as f:
             pickle.dump(paper_paper_map, f)
@@ -179,7 +179,7 @@ class PrepareData(object):
             for line in lines:
                 for paper, cited_paper in [line.strip().split(' ')]:
                     paper_paper_map[int(paper)].add(int(cited_paper))
-                    paper_paper_map[int(cited_paper)].add(int(paper))
+
             index = []
             for paper, cited_papers in paper_paper_map.items():
                 for cited_paper in cited_papers:
@@ -283,29 +283,7 @@ class PrepareData(object):
         with open(self.author_paper_map_path, 'wb') as f:
             pickle.dump(author_paper_map, f)
 
-
-
-
-    def generate_random_walk_paper(self, t: int) -> Tensor:
-        """Generate the random walk for all papers in citation network.
-
-        Args:
-            t (int): the length of random walk (t << M).
-        Returns:
-            random_walk_matrix (Tensor): (t, 1)
-        """
-        random_walk_matrix = torch.zeros(size=(t, 1), dtype=torch.int64)
-        start_paper = random.choice(range(0, self.paper_cnt))
-        random_walk_matrix[0, 0] = start_paper
-        pre = start_paper
-        for i in range(1, t):
-            cur = random.choice(list(self.paper_paper_map[pre]))
-            random_walk_matrix[i, 0] = cur
-            pre = cur
-        random_walk_matrix = random_walk_matrix.to(self.device)
-        return random_walk_matrix
-    
-    
+        self.author_paper_map = author_paper_map
 
 
     def prepare_all(self):
@@ -328,6 +306,6 @@ class PrepareData(object):
         # self.get_paper_paper_nei()
 
 if __name__ == "__main__":
-    output_dir = sys.path[2]
+    output_dir = sys.argv[1]
     x = PrepareData(path=output_dir)
     x.prepare_all()
