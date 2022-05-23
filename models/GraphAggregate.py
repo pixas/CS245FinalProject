@@ -26,13 +26,12 @@ class GATBlock(nn.Module):
         
     
     def forward(self, query: Tensor, key: Tensor, value: Tensor = None):
-        key_padding_mask = torch.all(query == 0, -1)
+        # key_padding_mask = torch.all(query == 0, -1)
         residual = query 
         query, _ = self.attention(
             query=query,
             key=key,
             value=value if value is not None else key,
-            key_padding_mask=key_padding_mask
         )
         query = self.layer_norm(query + residual)
         residual = query

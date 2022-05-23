@@ -33,7 +33,7 @@ def parse_args():
     
     # GAT Parameters
     parser.add_argument('--num_heads', type=int, default=8, help='multihead attention heads')
-    parser.add_argument('--gat_layers', type=int, default=6, help='GAT stack layers')
+    parser.add_argument('--gat_layers', type=int, default=1, help='GAT stack layers')
     
     # GCN Parameters
     parser.add_argument('--pa_layers', type=int, default=2, help='paper GNN layers')
