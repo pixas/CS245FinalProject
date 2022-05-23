@@ -1,6 +1,6 @@
 from typing import List
 
-from models.GraphAggregate import GraphSage
+from models.GraphAggregate import GraphSage,GAT
 import torch 
 import torch.nn as nn
 import torch.nn.functional as F 
@@ -54,8 +54,8 @@ class General(nn.Module):
         
         self.au_GNN = GNN(author_dim,author_dim,author_dim,Au_layers,Authordropout,True)
         # self.pa_GNN = GNN(paper_dim,paper_dim,paper_dim,Pa_layers,Paperdropout,True)
-        self.pa_sage = GraphSage(embed_dim=paper_dim, stack_layers=Pa_layers, dropout=Paperdropout)
-        # self.pa_GAT = GAT(paper_dim, args.num_heads, Paperdropout, args.gat_layers)
+        # self.pa_sage = GraphSage(embed_dim=paper_dim, stack_layers=Pa_layers, dropout=Paperdropout)
+        self.pa_GAT = GAT(paper_dim, args.num_heads, Paperdropout, args.gat_layers)
         # self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
         #          num_layers, NGCFembed_dim, paper_dim, author_dim,
         #          norm_adj, layer_size_list)
@@ -91,13 +91,13 @@ class General(nn.Module):
         
         author_embedding_new = self.au_GNN(author_embedding,self.author_adj)
         # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
-
-        # gat_embedding = self.pa_GAT(paper_neighbor_embedding)
-        paper_embedding_sage = self.pa_sage(paper_emb_list)
+        batch_paper_query = paper_embedding[test_papers].unsqueeze(1)
+        gat_embedding = self.pa_GAT(batch_paper_query, paper_emb_list)
+        # paper_embedding_sage = self.pa_sage(paper_emb_list)
         # paper_embedding_new[test_papers] = paper_embedding_sage
         paper_embedding_new = paper_embedding.scatter(0, torch.tensor(test_papers, 
                                                                     dtype=torch.int64, 
-                                                                    device=author_embedding.device).unsqueeze(-1).repeat(1, paper_embedding.shape[-1]), paper_embedding_sage)
+                                                                    device=author_embedding.device).unsqueeze(-1).repeat(1, paper_embedding.shape[-1]), gat_embedding)
         # paper_embedding_new = paper_embedding
         # author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
         interact_prob = torch.einsum("nd,md->nm", author_embedding_new, paper_embedding_new)

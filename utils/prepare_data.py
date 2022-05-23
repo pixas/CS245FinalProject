@@ -161,6 +161,7 @@ class PrepareData(object):
             for line in lines:
                 for paper, cited_paper in [line.strip().split(' ')]:
                     paper_paper_map[int(paper)].append(int(cited_paper))
+                    paper_paper_map[int(cited_paper)].append(int(paper))
             
             
             maxl = max([len(cited_papers) for cited_papers in paper_paper_map])
