@@ -159,7 +159,8 @@ class PrepareData(object):
             paper_paper_map = {paper: set() for paper in range(self.paper_cnt)}
             for line in lines:
                 for paper, cited_paper in [line.strip().split(' ')]:
-                    paper_paper_map[int(paper)].add(int(cited_paper))
+                    # paper_paper_map[int(paper)].add(int(cited_paper))
+                    paper_paper_map[int(cited_paper)].add(int(paper))
 
         print(f'Build paper-paper map, time cost: {time.time() - t1: .3f}s')
         with open(self.paper_paper_map_path, 'wb') as f:
@@ -178,8 +179,8 @@ class PrepareData(object):
             paper_paper_map = {paper: set() for paper in range(self.paper_cnt)}
             for line in lines:
                 for paper, cited_paper in [line.strip().split(' ')]:
-                    paper_paper_map[int(paper)].add(int(cited_paper))
-
+                    # paper_paper_map[int(paper)].add(int(cited_paper))
+                    paper_paper_map[int(cited_paper)].add(int(paper))
             index = []
             for paper, cited_papers in paper_paper_map.items():
                 for cited_paper in cited_papers:
