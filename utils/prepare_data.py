@@ -41,8 +41,10 @@ class PrepareData(object):
         self.paper_paper_nei_path = f'{path}/paper_paper_nei.pkl'
         self.bipartite_adj_path = f'{path}/bipartite_adj.pkl'
         self.bipartite_lap_path = f'{path}/bipartite_lap.pkl'
+        self.paper_mask = f'{path}/paper_mask.npy'
 
         self.author_paper_map_path = f'{path}/author_paper_map.pkl'
+        self.test_author_paper_map_path = f'{path}/test_author_paper_map.pkl'
         self.train_idx_path = f'{path}/train_idx.pkl'
         self.train_authors_path = f'{path}/train_authors.pkl'
         self.train_papers_path = f'{path}/train_papers.pkl'
@@ -113,32 +115,32 @@ class PrepareData(object):
 
         return author_adj_matrix
 
-    # def get_paper_paper_nei(self):
+    def get_paper_paper_nei(self):
 
-    #     t1 = time.time()
+        t1 = time.time()
         
-    #     paper_feature = self.paper_embeddings
-    #     paper_paper_map = self.paper_paper_map
+        paper_feature = self.paper_embeddings
+        paper_paper_map = self.paper_paper_map
 
-    #     # max_connection = max(len(list(x)) for i, x in paper_paper_map.items())
-    #     sample_number = 64
+        # max_connection = max(len(list(x)) for i, x in paper_paper_map.items())
+        sample_number = 64
 
-    #     neighbor_embedding = torch.zeros((self.paper_cnt, sample_number + 1, paper_feature.shape[-1]), dtype=paper_feature.dtype)
-    #     for i, x in paper_paper_map.items():
-    #         possible_idx = list(x)
-    #         random.shuffle(possible_idx)
-    #         idx = torch.tensor(possible_idx if len(possible_idx) <= sample_number else possible_idx[:sample_number], dtype=torch.int64)
+        neighbor_embedding = torch.zeros((self.paper_cnt, sample_number + 1, paper_feature.shape[-1]), dtype=paper_feature.dtype)
+        for i, x in paper_paper_map.items():
+            possible_idx = list(x)
+            random.shuffle(possible_idx)
+            idx = torch.tensor(possible_idx if len(possible_idx) <= sample_number else possible_idx[:sample_number], dtype=torch.int64)
 
-    #         gather_idx = idx.unsqueeze(-1).repeat((1, paper_feature.shape[-1]))
+            gather_idx = idx.unsqueeze(-1).repeat((1, paper_feature.shape[-1]))
 
-    #         gathered_embedding = paper_feature.gather(0, gather_idx)
-    #         neighbor_embedding[i] = neighbor_embedding[i].scatter(0, torch.arange(1, len(idx) + 1, 1, dtype=torch.int64).unsqueeze(-1).repeat((1, paper_feature.shape[-1])), gathered_embedding)
-    #         neighbor_embedding[i, 0] = paper_feature[i]
+            gathered_embedding = paper_feature.gather(0, gather_idx)
+            neighbor_embedding[i] = neighbor_embedding[i].scatter(0, torch.arange(1, len(idx) + 1, 1, dtype=torch.int64).unsqueeze(-1).repeat((1, paper_feature.shape[-1])), gathered_embedding)
+            neighbor_embedding[i, 0] = paper_feature[i]
 
-    #     print(f'Build paper paper neighborhood, time cost: {time.time() - t1:.3f}')
-    #     torch.save(neighbor_embedding, self.paper_paper_nei_path)
-    #         # with open(self.paper_paper_nei_path, 'wb') as f:
-    #         #     pickle.dump(neighbor_embedding, f)
+        print(f'Build paper paper neighborhood, time cost: {time.time() - t1:.3f}')
+        torch.save(neighbor_embedding, self.paper_paper_nei_path)
+            # with open(self.paper_paper_nei_path, 'wb') as f:
+            #     pickle.dump(neighbor_embedding, f)
         
 
                 
@@ -156,13 +158,23 @@ class PrepareData(object):
         t1 = time.time()
         with open(self.paper_graph_path, 'r') as f:
             lines = f.readlines()
-            paper_paper_map = {paper: set() for paper in range(self.paper_cnt)}
+            paper_paper_map = [list() for paper in range(self.paper_cnt)]
             for line in lines:
                 for paper, cited_paper in [line.strip().split(' ')]:
-                    paper_paper_map[int(paper)].add(int(cited_paper))
-                    paper_paper_map[int(cited_paper)].add(int(paper))
-
+                    paper_paper_map[int(paper)].append(int(cited_paper))
+                    paper_paper_map[int(cited_paper)].append(int(paper))
+            
+            
+            maxl = max([len(cited_papers) for cited_papers in paper_paper_map])
+            padding_mask = np.zeros((self.paper_cnt, maxl))
+            for i in range(len(paper_paper_map)):
+                paper_paper_map[i] = paper_paper_map[i] + [0]*(maxl-len(paper_paper_map[i]))
+                padding_mask[i, :len(paper_paper_map[i])] = 1
+            
+            paper_paper_map = np.array(paper_paper_map)
+                    
         print(f'Build paper-paper map, time cost: {time.time() - t1: .3f}s')
+        np.save(self.paper_mask,padding_mask)
         with open(self.paper_paper_map_path, 'wb') as f:
             pickle.dump(paper_paper_map, f)
 
@@ -283,8 +295,47 @@ class PrepareData(object):
         print(f'Build author-paper map, time cost: {time.time() - t1: .3f}s')
         with open(self.author_paper_map_path, 'wb') as f:
             pickle.dump(author_paper_map, f)
-
         self.author_paper_map = author_paper_map
+
+    def get_test_author_paper_map(self) -> Dict[int, Set[int]]:
+        """Returns the mapping from auhtors to papers in test dataset.
+        Returns:
+            The mapping from authors to papers in test dataset.
+        Note: all paper indexes have been added self.author_cnt
+        """
+        t1 = time.time()
+        with open(self.bipartite_graph_test_path, 'r') as f:
+            lines = f.readlines()
+            test_author_paper_map = {author: set() for author in range(self.author_cnt)}
+            for line in lines:
+                for author, paper in [line.strip().split(' ')]:
+                    test_author_paper_map[int(author)].add(int(paper) + self.author_cnt)
+        print(f'Build test author-paper map, time cost: {time.time() - t1: .3f}s')
+        with open(self.test_author_paper_map_path, 'wb') as f:
+            pickle.dump(test_author_paper_map, f)
+        self.test_author_paper_map = test_author_paper_map
+
+
+    def generate_random_walk_paper(self, t: int) -> Tensor:
+        """Generate the random walk for all papers in citation network.
+
+        Args:
+            t (int): the length of random walk (t << M).
+        Returns:
+            random_walk_matrix (Tensor): (t, 1)
+        """
+        random_walk_matrix = torch.zeros(size=(t, 1), dtype=torch.int64)
+        start_paper = random.choice(range(0, self.paper_cnt))
+        random_walk_matrix[0, 0] = start_paper
+        pre = start_paper
+        for i in range(1, t):
+            cur = random.choice(list(self.paper_paper_map[pre]))
+            random_walk_matrix[i, 0] = cur
+            pre = cur
+        random_walk_matrix = random_walk_matrix.to(self.device)
+        return random_walk_matrix
+    
+    
 
 
     def prepare_all(self):
@@ -294,6 +345,7 @@ class PrepareData(object):
         self.get_paper_paper_map()
         # self.paper_embeddings = self.get_paper_embeddings()
         self.get_author_paper_map()
+        self.get_test_author_paper_map()
         self.get_bipartite_matrix()
         self.get_train_idx()
         

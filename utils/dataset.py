@@ -37,6 +37,7 @@ class AcademicDataset(object):
         self.bipartite_graph_test_path = f'{path}/bipartite_test_ann.txt'
         self.author_feature_path = f'{path}/author_vec.pkl'
         self.paper_feature_path = f'{path}/feature.pkl'
+        self.paper_mask = f'{path}/paper_mask.npy'
 
         self.author_adj_path = f'{path}/author_adj.pkl'
         self.author_author_map_path = f'{path}/author_author_map.pkl'
@@ -47,6 +48,7 @@ class AcademicDataset(object):
         self.bipartite_lap_path = f'{path}/bipartite_lap.pkl'
 
         self.author_paper_map_path = f'{path}/author_paper_map.pkl'
+        self.test_author_paper_map_path = f'{path}/test_author_paper_map.pkl'
         self.train_idx_path = f'{path}/train_idx.pkl'
         self.train_authors_path = f'{path}/train_authors.pkl'
         self.train_papers_path = f'{path}/train_papers.pkl'
@@ -54,7 +56,8 @@ class AcademicDataset(object):
         # data path end #
         self.sample_number = sample_number
         self.author_paper_map = self.get_author_paper_map()
-        self._paper_paper_map = self.get_paper_paper_map()
+        self.test_author_paper_map = self.get_test_author_paper_map()
+        self._paper_paper_map,self.paper_mask = self.get_paper_paper_map()
         self._author_author_map = self.get_author_author_map()
         
         self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
@@ -64,9 +67,22 @@ class AcademicDataset(object):
         self.total_train_cnt = len(self.train_index)
 
         
-        self.paper_maximum_connection = max(len(list(x)) for i, x in self._paper_paper_map.items())
-        self.author_maximum_connection = max(len(list(x)) for i, x in self._author_author_map.items())
+        # self.paper_maximum_connection = max(len(list(x)) for i, x in self._paper_paper_map.items())
+        # self.author_maximum_connection = max(len(list(x)) for i, x in self._author_author_map.items())
+
+    
+    def get_paper_connect_author(self):
+        paper_emb = self.get_paper_embeddings()
+        paper_emb = paper_emb.to(torch.device('cpu'))
+        res = []
+        for author in range(self.author_cnt):
+            nei_paper = paper_emb[np.array(list(self.author_paper_map[author]))-self.author_cnt]
+            if len(nei_paper) == 0:
+                res.append(np.zeros(paper_emb.shape[1]))
+            else:
+                res.append(np.average(nei_paper,0))
         
+        return torch.tensor(np.array(res),dtype=torch.float,device=self.device)
         
 
     def get_batch_paper_neighbor(self, paper_feature: torch.Tensor, train_paper_index: List[int]):
@@ -114,6 +130,22 @@ class AcademicDataset(object):
         print(f'Load author-author map from {self.author_author_map_path}, time cost: {time.time() - t1: .3f}s')
       
         return author_author_map
+    
+    def get_test_author_paper_map(self) -> Dict[int, Set[int]]:
+        """Returns the mapping from authors to papers in test set.
+        Returns:
+            The mapping from authors to papers.
+        Example:
+            author 1 has coauthored with author 10 and author 11 in test dataset
+            return {1: {10, 11}, 10: {1}, 11: {1}}
+        """
+
+        t1 = time.time()
+        with open(self.test_author_paper_map_path, 'rb') as f:
+            test_author_paper_map = pickle.load(f)
+        print(f'Load test author-paper map from {self.test_author_paper_map_path}, time cost: {time.time() - t1: .3f}s')
+
+        return test_author_paper_map
 
     def get_author_adj_matrix(self) -> SparseTensor:
         """Returns the adjacency matrix of the coauthor graph.
@@ -146,8 +178,9 @@ class AcademicDataset(object):
         with open(self.paper_paper_map_path, 'rb') as f:
             paper_paper_map = pickle.load(f)
         print(f'Load paper-paper map from {self.paper_paper_map_path}, time cost: {time.time() - t1: .3f}s')
-      
-        return paper_paper_map
+        paper_mask = np.load(self.paper_mask)
+
+        return paper_paper_map,paper_mask
 
     def get_paper_adj_matrix(self) -> SparseTensor:
         """Returns the adjacency matrix of the citation network among papers.
@@ -326,7 +359,7 @@ class AcademicDataset(object):
             flag = False
             while not flag:
                 random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.paper_cnt, size=1)[0]
-                if random_paper not in self.author_paper_map[neg_train_author]:
+                if random_paper not in self.author_paper_map[neg_train_author] and random_paper not in self.test_author_paper_map[neg_train_author]:
                     neg_train_index.append([neg_train_author, random_paper - self.author_cnt])
                     flag = True
 
@@ -359,7 +392,7 @@ class AcademicDataset(object):
             flag = False
             while not flag:
                 random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.paper_cnt, size=1)[0]
-                if random_paper not in self.author_paper_map[neg_test_author]:
+                if random_paper not in self.author_paper_map[neg_test_author] and random_paper not in self.test_author_paper_map[neg_test_author]:
                     neg_test_index.append([neg_test_author, random_paper - self.author_cnt])
                     flag = True
 
@@ -419,6 +452,19 @@ class AcademicDataset(object):
 
 if __name__ == '__main__':
     data_generator = AcademicDataset(batch_size=1024, random_walk_length=16, device='cpu', path='data')
+    flag = True
+    while flag:
+        s = data_generator.sample_train()[1]
+        for a, p in s:
+            # print(a, p)
+            # print(data_generator.test_author_paper_map[a])
+            # print((p + 6611) in data_generator.test_author_paper_map[a])
+            if p in data_generator.test_author_paper_map[a]:
+                print(a, p)
+                print('111111111')
+                print((p + data_generator.paper_cnt) in data_generator.test_author_paper_map[a])
+                flag = False
+
     # print(data_generator.author_author_map[0])
     # print(data_generator.paper_paper_map[0])
     # print('--author--')
