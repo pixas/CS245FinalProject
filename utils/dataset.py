@@ -42,6 +42,7 @@ class AcademicDataset(object):
         self.bipartite_adj_path = f'{path}/bipartite_adj.pkl'
         self.bipartite_lap_path = f'{path}/bipartite_lap.pkl'
         self.author_paper_map_path = f'{path}/author_paper_map.pkl'
+        self.test_author_paper_map_path = f'{path}/test_author_paper_map.pkl'
         self.train_idx_path = f'{path}/train_idx.pkl'
         self.train_authors_path = f'{path}/train_authors.pkl'
         self.train_papers_path = f'{path}/train_papers.pkl'
@@ -49,6 +50,7 @@ class AcademicDataset(object):
         # data path end #
         self.sample_number = sample_number
         self.author_paper_map = self.get_author_paper_map()
+        self.test_author_paper_map = self.get_test_author_paper_map()
         self._paper_paper_map = self.get_paper_paper_map()
         self._author_author_map = self.get_author_author_map()
         
@@ -224,6 +226,22 @@ class AcademicDataset(object):
         print(f'Load author-paper map from {self.author_paper_map_path}, time cost: {time.time() - t1: .3f}s')
     
         return author_paper_map
+
+    def get_test_author_paper_map(self) -> Dict[int, Set[int]]:
+        """Returns the mapping from authors to papers in test set.
+        Returns:
+            The mapping from authors to papers.
+        Example:
+            author 1 has coauthored with author 10 and author 11 in test dataset
+            return {1: {10, 11}, 10: {1}, 11: {1}}
+        """
+
+        t1 = time.time()
+        with open(self.test_author_paper_map_path, 'rb') as f:
+            test_author_paper_map = pickle.load(f)
+        print(f'Load test author-paper map from {self.test_author_paper_map_path}, time cost: {time.time() - t1: .3f}s')
+
+        return test_author_paper_map
     # def sample(self) -> Tuple[Tensor, Tensor]:
     #     """
     #     Sample two random walk path starting from two random nodes(author & paper)

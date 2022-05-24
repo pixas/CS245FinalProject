@@ -35,6 +35,7 @@ class PrepareData(object):
         self.bipartite_adj_path = f'{path}/bipartite_adj.pkl'
         self.bipartite_lap_path = f'{path}/bipartite_lap.pkl'
         self.author_paper_map_path = f'{path}/author_paper_map.pkl'
+        self.test_author_paper_map_path = f'{path}/test_author_paper_map.pkl'
         self.train_idx_path = f'{path}/train_idx.pkl'
         self.train_authors_path = f'{path}/train_authors.pkl'
         self.train_papers_path = f'{path}/train_papers.pkl'
@@ -246,6 +247,25 @@ class PrepareData(object):
         with open(self.author_paper_map_path, 'wb') as f:
             pickle.dump(author_paper_map, f)
         self.author_paper_map = author_paper_map
+
+    def get_test_author_paper_map(self) -> Dict[int, Set[int]]:
+        """Returns the mapping from auhtors to papers in test dataset.
+        Returns:
+            The mapping from authors to papers in test dataset.
+        Note: all paper indexes have been added self.author_cnt
+        """
+        t1 = time.time()
+        with open(self.bipartite_graph_test_path, 'r') as f:
+            lines = f.readlines()
+            test_author_paper_map = {author: set() for author in range(self.author_cnt)}
+            for line in lines:
+                for author, paper in [line.strip().split(' ')]:
+                    test_author_paper_map[int(author)].add(int(paper) + self.author_cnt)
+        print(f'Build test author-paper map, time cost: {time.time() - t1: .3f}s')
+        with open(self.test_author_paper_map_path, 'wb') as f:
+            pickle.dump(test_author_paper_map, f)
+        self.test_author_paper_map = test_author_paper_map
+
     def prepare_all(self):
         self.get_author_adj_matrix()
         self.get_author_author_map()
@@ -253,6 +273,7 @@ class PrepareData(object):
         self.get_paper_paper_map()
         # self.paper_embeddings = self.get_paper_embeddings()
         self.get_author_paper_map()
+        self.get_test_author_paper_map()
         self.get_bipartite_matrix()
         self.get_train_idx()
         
