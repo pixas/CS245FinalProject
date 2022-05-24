@@ -57,7 +57,7 @@ class AcademicDataset(object):
         self.sample_number = sample_number
         self.author_paper_map = self.get_author_paper_map()
         self.test_author_paper_map = self.get_test_author_paper_map()
-        self._paper_paper_map,self.paper_mask = self.get_paper_paper_map()
+        self._paper_paper_map = self.get_paper_paper_map()
         self._author_author_map = self.get_author_author_map()
         
         self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
@@ -178,9 +178,9 @@ class AcademicDataset(object):
         with open(self.paper_paper_map_path, 'rb') as f:
             paper_paper_map = pickle.load(f)
         print(f'Load paper-paper map from {self.paper_paper_map_path}, time cost: {time.time() - t1: .3f}s')
-        paper_mask = np.load(self.paper_mask)
+        # paper_mask = np.load(self.paper_mask)
 
-        return paper_paper_map,paper_mask
+        return paper_paper_map
 
     def get_paper_adj_matrix(self) -> SparseTensor:
         """Returns the adjacency matrix of the citation network among papers.
