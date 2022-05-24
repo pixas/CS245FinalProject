@@ -359,7 +359,7 @@ class AcademicDataset(object):
             flag = False
             while not flag:
                 random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.paper_cnt, size=1)[0]
-                if random_paper not in self.author_paper_map[neg_train_author] and random_paper not in self.test_author_paper_map[neg_train_author]:
+                if random_paper not in self.author_paper_map[neg_train_author]: # and random_paper not in self.test_author_paper_map[neg_train_author]:
                     neg_train_index.append([neg_train_author, random_paper - self.author_cnt])
                     flag = True
 
@@ -392,7 +392,7 @@ class AcademicDataset(object):
             flag = False
             while not flag:
                 random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.paper_cnt, size=1)[0]
-                if random_paper not in self.author_paper_map[neg_test_author] and random_paper not in self.test_author_paper_map[neg_test_author]:
+                if random_paper not in self.author_paper_map[neg_test_author]: # and random_paper not in self.test_author_paper_map[neg_test_author]:
                     neg_test_index.append([neg_test_author, random_paper - self.author_cnt])
                     flag = True
 
