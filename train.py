@@ -200,13 +200,13 @@ def train(model: General, optimizer, args):
 
                 train_pos_index, train_neg_index, train_authors, train_papers = data_generator.sample_train()
                 # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, train_papers)
-                paper_neighbor_embedding = []
                 author_embedding, paper_embedding, interact_prob = model(
                     pretrained_author_embedding, 
                     pretrained_paper_embedding,
-                    paper_neighbor_embedding,
                     train_papers,
-                    train_authors
+                    train_authors,
+                    paper_paper_map,
+                    paper_padding_mask
                 )
                 
                 # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()
