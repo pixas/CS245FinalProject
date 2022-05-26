@@ -56,7 +56,7 @@ data_generator = AcademicDataset(batch_size=args.batch_size, random_walk_length=
 # pretrained_author_embedding = data_generator.author_embeddings
 pretrained_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
 pretrained_paper_embedding = data_generator.get_paper_embeddings()
-paper_paper_map, paper_padding_mask = data_generator._paper_paper_map, data_generator.paper_mask
+paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
 
 
 def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index, neg_index, authors, papers):
