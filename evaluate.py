@@ -64,8 +64,9 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     with tqdm(total=len(test_array)) as t:
         t.set_description("Evaluating:")
         for idx, (author, paper) in enumerate(test_array):
-            result = torch.sum(author_embedding[author] * paper_embedding[paper])
-            prob = torch.sigmoid(result).item()
+            # result = torch.sum(author_embedding[author] * paper_embedding[paper])
+            # prob = torch.sigmoid(result).item()
+            prob = interact_prob[author, paper]
             f.write("{},{}\n".format(idx, prob))
             t.update(1)
     f.close()
