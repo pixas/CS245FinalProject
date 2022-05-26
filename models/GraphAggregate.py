@@ -15,30 +15,29 @@ class GATBlock(nn.Module):
             dropout=dropout, batch_first=True
         )
         
-        self.layer_norm = nn.LayerNorm(embed_dim)
-        self.linear1 = nn.Linear(embed_dim, embed_dim * 4)
-        self.linear2 = nn.Linear(embed_dim * 4, embed_dim)
-        self.out_norm = nn.LayerNorm(embed_dim)
+        # self.layer_norm = nn.LayerNorm(embed_dim)
+        # self.linear1 = nn.Linear(embed_dim, embed_dim * 4)
+        # self.linear2 = nn.Linear(embed_dim * 4, embed_dim)
+        # self.out_norm = nn.LayerNorm(embed_dim)
     
     def reset_parameters(self):
         nn.init.xavier_normal_(self.linear1.weight, 2 ** -0.5)
         nn.init.xavier_normal_(self.linear2.weight, 2 ** -0.5)
         
     
-    def forward(self, x: Tensor):
-        key_padding_mask = torch.all(x == 0, -1)
-        residual = x 
-        x, _ = self.attention(
-            query=x,
-            key=x,
-            value=x,
-            key_padding_mask=key_padding_mask
+    def forward(self, query: Tensor, key: Tensor, value: Tensor):
+        # key_padding_mask = torch.all(x == 0, -1)
+        # residual = query 
+        query, _ = self.attention(
+            query=query,
+            key=key,
+            value=value if value is not None else key,
         )
-        x = self.layer_norm(x + residual)
-        residual = x
-        x = self.linear2(F.gelu(self.linear1(x)))
-        x = self.out_norm(x + residual)
-        return x
+        # query = self.layer_norm(query + residual)
+        # residual = query
+        # query = self.linear2(F.gelu(self.linear1(query)))
+        # query = self.out_norm(query + residual)
+        return query
 
 class GAT(nn.Module):
     def __init__(self, embed_dim: int,
@@ -51,9 +50,9 @@ class GAT(nn.Module):
             GATBlock(embed_dim, num_heads, dropout)
         for i in range(stack_layers)])
     
-    def forward(self, x: Tensor):
+    def forward(self, x: Tensor, y: Tensor):
         for i, layer in enumerate(self.layers):
-            x = layer(x)
+            x = layer(x, y, y)
         
         return x[:, 0, :]
 

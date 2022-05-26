@@ -43,6 +43,7 @@ class AcademicDataset(object):
         self.paper_adj_path = f'{path}/paper_adj.pkl'
         self.paper_paper_map_path = f'{path}/paper_paper_map.pkl'
         self.paper_paper_nei_path = f'{path}/paper_paper_nei.pkl'
+        self.paper_mask = f'{path}/paper_mask.npy'
         self.bipartite_adj_path = f'{path}/bipartite_adj.pkl'
         self.bipartite_lap_path = f'{path}/bipartite_lap.pkl'
 
@@ -54,7 +55,7 @@ class AcademicDataset(object):
         # data path end #
         self.sample_number = sample_number
         self.author_paper_map = self.get_author_paper_map()
-        self._paper_paper_map = self.get_paper_paper_map()
+        self._paper_paper_map, self._paper_neigh = self.get_paper_paper_map()
         self._author_author_map = self.get_author_author_map()
         
         self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
@@ -146,8 +147,9 @@ class AcademicDataset(object):
         with open(self.paper_paper_map_path, 'rb') as f:
             paper_paper_map = pickle.load(f)
         print(f'Load paper-paper map from {self.paper_paper_map_path}, time cost: {time.time() - t1: .3f}s')
-      
-        return paper_paper_map
+        paper_mask = np.load(self.paper_mask)
+        paper_mask = torch.from_numpy(paper_mask).to(self.device).to(torch.float32)
+        return paper_paper_map,paper_mask
 
     def get_paper_adj_matrix(self) -> SparseTensor:
         """Returns the adjacency matrix of the citation network among papers.
