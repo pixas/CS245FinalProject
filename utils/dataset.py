@@ -65,8 +65,8 @@ class AcademicDataset(object):
         self.total_train_cnt = len(self.train_index)
 
         
-        self.paper_maximum_connection = max(len(list(x)) for i, x in self._paper_paper_map.items())
-        self.author_maximum_connection = max(len(list(x)) for i, x in self._author_author_map.items())
+        # self.paper_maximum_connection = max(len(list(x)) for i, x in self._paper_paper_map.items())
+        # self.author_maximum_connection = max(len(list(x)) for i, x in self._author_author_map.items())
         
         
 
