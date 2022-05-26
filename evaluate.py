@@ -22,6 +22,7 @@ def parse_args():
     return parser.parse_args()
 
 args = parse_args()
+print(args)
 model_parameter = torch.load(args.path)
 train_args = model_parameter['args']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
