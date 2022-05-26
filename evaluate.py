@@ -72,7 +72,7 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     test_mf_loss = epoch_mf_loss / n_test_batch
     test_total_precision = epoch_total_precision / n_test_batch
     test_total_recall = epoch_total_recall / n_test_batch
-    print("Test precision: {:.4f}\tTest recall: {:.4f}".format(test_total_precision, test_total_recall))
+    print("Test loss: {:.4f}\tTest precision: {:.4f}\tTest recall: {:.4f}".format(test_loss, test_total_precision, test_total_recall))
     f = open(os.path.join(output_dir, output_file_name), 'w')
     f.write("Index,Probability\n")
     with tqdm(total=len(test_array)) as t:
