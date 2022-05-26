@@ -29,7 +29,7 @@ data_generator = AcademicDataset(batch_size=train_args.batch_size, random_walk_l
 # pretrained_author_embedding = data_generator.author_embeddings
 pretrained_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
 pretrained_paper_embedding = data_generator.get_paper_embeddings()
-
+paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
 
 
 
@@ -48,13 +48,14 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
 
             test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
             # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
-            paper_neighbor_embedding= []
+
             author_embedding, paper_embedding, interact_prob = model(
                 pretrained_author_embedding, 
                 pretrained_paper_embedding,
-                paper_neighbor_embedding,
                 test_papers,
-                test_authors
+                test_authors,
+                paper_paper_map,
+                paper_padding_mask
             )
 
             t.update(1)
