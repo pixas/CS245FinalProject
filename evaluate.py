@@ -7,6 +7,7 @@ import time
 import torch
 
 from tqdm import tqdm
+from train import get_loss
 from utils.dataset import AcademicDataset
 from typing import List
 
@@ -43,7 +44,8 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     # paper_embedding = pretrained_paper_embedding
     with tqdm(total=n_test_batch) as t:
         t.set_description(f"Evaluation")
-
+        epoch_loss, epoch_mf_loss, epoch_emb_loss = 0, 0, 0
+        epoch_total_precision, epoch_total_recall = 0, 0
         for batch_idx in range(1, n_test_batch + 1):
 
             test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
@@ -57,8 +59,20 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
                 paper_paper_map,
                 paper_padding_mask
             )
+            test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
+            
+            epoch_loss += test_loss
+            epoch_mf_loss += test_mf_loss
+            epoch_emb_loss += test_emb_loss
+            epoch_total_precision += test_precision
+            epoch_total_recall += test_recall
 
             t.update(1)
+    test_loss = epoch_loss / n_test_batch
+    test_mf_loss = epoch_mf_loss / n_test_batch
+    test_total_precision = epoch_total_precision / n_test_batch
+    test_total_recall = epoch_total_recall / n_test_batch
+    print("Test precision: {:.4f}\tTest recall: {:.4f}".format(test_total_precision, test_total_recall))
     f = open(os.path.join(output_dir, output_file_name), 'w')
     f.write("Index,Probability\n")
     with tqdm(total=len(test_array)) as t:
