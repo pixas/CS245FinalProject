@@ -34,7 +34,7 @@ class LightGCN(torch.nn.Module):
 
     def forward(self, x, adj_t):
         if self.dropout_flag:
-            # TODO: not drop when training
+            # TODO: not drop when testing
             g_dropped = self.__dropout(adj_t, self.keep_prob)
         else:
             g_dropped = adj_t
@@ -46,6 +46,7 @@ class LightGCN(torch.nn.Module):
             embs.append(emb)
         embs = torch.stack(embs, dim=1)
         light_out = torch.mean(embs, dim=1)
+        print(light_out.shape)
         return light_out
         
 

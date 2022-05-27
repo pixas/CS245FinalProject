@@ -36,7 +36,7 @@ def parse_args():
     parser.add_argument('--gat_layers', type=int, default=6, help='GAT stack layers')
     
     # GCN Parameters
-    parser.add_argument('--pa_layers', type=int, default=2, help='paper GNN layers')
+    parser.add_argument('--pa_layers', type=int, default=3, help='paper GNN layers')
     parser.add_argument('--au_layers', type=int, default=2, help='author GNN layers')
     parser.add_argument('--gnn_dropout', type=float, default=0.2, help='GNN layer dropout rate')
     parser.add_argument('--lgn_dropout', type=bool, default=True, help='Light GCN dropout flag')
