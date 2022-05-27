@@ -5,8 +5,9 @@ import numpy as np
 from models.General import General
 import time
 import torch
-
+import torch.nn.functional as F 
 from tqdm import tqdm
+
 from utils.dataset import AcademicDataset
 from typing import List
 
@@ -20,7 +21,39 @@ def parse_args():
 
     return parser.parse_args()
 
+
+def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index, neg_index, authors, papers):
+    author_embeddings = author_embedding[authors]
+    paper_embeddings = paper_embedding[papers]
+    author_embedding = F.normalize(author_embedding, p=2, dim=1)
+    paper_embedding = F.normalize(paper_embedding, p=2, dim=1)
+    # score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
+    
+    fetch_pos_index = list(zip(*pos_index))
+    fetch_neg_index = list(zip(*neg_index))
+    pos_scores = interact_prob[fetch_pos_index[0], fetch_pos_index[1]]
+    neg_scores = interact_prob[fetch_neg_index[0], fetch_neg_index[1]]
+
+    mf_loss = (torch.sum(1-pos_scores) + torch.sum(neg_scores)) / (len(pos_index) + len(neg_index))
+    # mf_loss = F.nll_loss(pos_scores, torch.ones((pos_scores.shape[0]), device=interact_prob.device)) + \
+    #     F.nll_loss(neg_scores, torch.zeros((pos_scores.shape[0]), device=interact_prob.device))
+    
+    # mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
+
+    regularizer = (torch.norm(author_embeddings) ** 2 + torch.norm(paper_embeddings) ** 2) / 2
+    emb_loss = decay * regularizer / (len(authors) + len(papers))
+    
+    # pred_pos = torch.sum(score_matrix >= 0)
+    pos_samples = pos_scores >= 0.5
+    neg_samples = neg_scores >= 0.5
+    true_pos = torch.sum(pos_samples)
+    precision = torch.sum(pos_samples) / (torch.sum(pos_samples) + torch.sum(neg_samples))
+    recall = true_pos / len(pos_index)
+
+    return mf_loss + emb_loss, mf_loss, emb_loss, precision, recall
+
 args = parse_args()
+print(args)
 model_parameter = torch.load(args.path)
 train_args = model_parameter['args']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -36,7 +69,6 @@ paper_feature = data_generator.get_paper_embeddings()
 
 @torch.no_grad()
 def evaluate_test_ann(model: General, test_file: str, output_dir: str):
-    n_test_batch = len(data_generator.real_test_index) // (data_generator.batch_size // 2) + 1
     output_file_name = "13_ShuyangJiang.csv"
     test_array: list = np.loadtxt(test_file, dtype=int, delimiter=' ')
     model.eval()

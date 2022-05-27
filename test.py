@@ -32,8 +32,6 @@ if __name__ == '__main__':
     # with open("./data/author_vec.pkl", 'rb') as f:
     #     x = pickle.load(f)
     # print(x.shape)
-    x = ['checkpoint1.pt', 'checkpoint9.pt', 'checkpoint38.pt']
-    x.sort(key=cmp_to_key(lambda x, y: int(x[10:-3]) - int(y[10:-3])))
-    print(x)
+    arr = np.loadtxt()
     # print(a.shape)
     

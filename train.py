@@ -6,6 +6,7 @@ import time
 import torch
 import torch.nn.functional as F 
 import torch.optim as optim
+import numpy as np
 from tqdm import tqdm
 from utils.dataset import AcademicDataset
 from functools import cmp_to_key
@@ -58,7 +59,7 @@ data_generator = AcademicDataset(batch_size=args.batch_size, random_walk_length=
 init_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
 init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=device)
 paper_feature = data_generator.get_paper_embeddings()
-
+paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
 
 def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index, neg_index, authors, papers):
     author_embeddings = author_embedding[authors]
@@ -96,6 +97,7 @@ def save_checkpoint(model: General, args: argparse.ArgumentParser, save_metric: 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     all_ckpts = os.listdir(save_dir)
+    all_ckpts = list(filter(lambda x: x.startswith('checkpoint'), all_ckpts))
     cur_save_info = {
             'model_state': model.state_dict(),
             'metric': save_metric,
@@ -109,7 +111,6 @@ def save_checkpoint(model: General, args: argparse.ArgumentParser, save_metric: 
     else:
         if len(all_ckpts) - 2 >= keep_last_epochs:
 
-            all_ckpts = list(filter(lambda x: x.startswith('checkpoint'), all_ckpts))
             all_ckpts.remove('checkpoint_best.pt')
             all_ckpts.remove('checkpoint_last.pt')
             all_ckpts.sort(key=cmp_to_key(lambda x, y: int(x[10:-3]) - int(y[10:-3])))
@@ -151,7 +152,9 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
                 paper_feature,
                 paper_neighbor_embedding,
                 test_papers,
-                test_authors
+                test_authors,
+                paper_paper_map,
+                paper_padding_mask
             )
 
             test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
@@ -201,14 +204,15 @@ def train(model: General, optimizer, args):
 
                 train_pos_index, train_neg_index, train_authors, train_papers = data_generator.sample_train()
                 # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, train_papers)
-                paper_neighbor_embedding = []
                 author_embedding, paper_embedding, interact_prob = model(
                     init_author_embedding, 
                     init_paper_embedding,
                     paper_feature,
-                    paper_neighbor_embedding,
+                    [],
                     train_papers,
-                    train_authors
+                    train_authors,
+                    paper_paper_map,
+                    paper_padding_mask
                 )
                 
                 # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()
@@ -252,6 +256,7 @@ def train(model: General, optimizer, args):
         #         t.update(1)
         # print(f'Test Epoch {epoch_idx} Loss: {epoch_loss / n_test_batch} MF Loss: {epoch_mf_loss / n_test_batch} Emb Loss: {epoch_emb_loss / n_test_batch} Precision: {epoch_total_precision / n_test_batch} Recall: {epoch_total_recall / n_test_batch}')
         save_checkpoint(model, args, test_total_recall, epoch_idx)
+        np.save(os.path.join(args.save_dir, 'interact_prob.npy'), interact_prob.detach().cpu().numpy())
 
 
 
