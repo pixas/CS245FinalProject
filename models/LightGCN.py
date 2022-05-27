@@ -46,7 +46,7 @@ class LightGCN(torch.nn.Module):
             embs.append(emb)
         embs = torch.stack(embs, dim=1)
         light_out = torch.mean(embs, dim=1)
-        print(light_out.shape)
+        # print(light_out.shape)
         return light_out
         
 
