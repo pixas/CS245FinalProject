@@ -38,7 +38,7 @@ paper_feature = data_generator.get_paper_embeddings()
 def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     n_test_batch = len(data_generator.real_test_index) // (data_generator.batch_size // 2) + 1
     output_file_name = "13_ShuyangJiang.csv"
-    test_array: list = np.loadtxt(test_file, dtype=int, delimiter=' ').tolist()
+    test_array: list = np.loadtxt(test_file, dtype=int, delimiter=' ')
     model.eval()
     # author_embedding = pretrained_author_embedding
     # paper_embedding = pretrained_paper_embedding
@@ -89,7 +89,7 @@ if __name__ == '__main__':
         paper_dim=train_args.embed_dim,
         author_dim=train_args.embed_dim,
         layer_size_list=train_args.layer_size_list,
-        only_feature=train_args.only_feature
+        only_feature=train_args.only_feature,
         args=train_args
     )
     model.to(device)
