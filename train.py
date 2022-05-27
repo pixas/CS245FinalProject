@@ -96,6 +96,7 @@ def save_checkpoint(model: General, args: argparse.ArgumentParser, save_metric: 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     all_ckpts = os.listdir(save_dir)
+    all_ckpts = list(filter(lambda x: x.startswith('checkpoint'), all_ckpts))
     cur_save_info = {
             'model_state': model.state_dict(),
             'metric': save_metric,
@@ -109,7 +110,6 @@ def save_checkpoint(model: General, args: argparse.ArgumentParser, save_metric: 
     else:
         if len(all_ckpts) - 2 >= keep_last_epochs:
 
-            all_ckpts = list(filter(lambda x: x.startswith('checkpoint'), all_ckpts))
             all_ckpts.remove('checkpoint_best.pt')
             all_ckpts.remove('checkpoint_last.pt')
             all_ckpts.sort(key=cmp_to_key(lambda x, y: int(x[10:-3]) - int(y[10:-3])))
