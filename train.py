@@ -39,6 +39,8 @@ def parse_args():
     parser.add_argument('--pa_layers', type=int, default=2, help='paper GNN layers')
     parser.add_argument('--au_layers', type=int, default=2, help='author GNN layers')
     parser.add_argument('--gnn_dropout', type=float, default=0.2, help='GNN layer dropout rate')
+    parser.add_argument('--lgn_dropout', type=bool, default=True, help='Light GCN dropout flag')
+    parser.add_argument('--lgn_keep_prob', type=float, default=0.6, help='Light GCN keep probability')
     
     
     parser.add_argument('--decay', type=float, default=0.1, help='regularizer term coefficient')
