@@ -6,6 +6,7 @@ import time
 import torch
 import torch.nn.functional as F 
 import torch.optim as optim
+import numpy as np
 from tqdm import tqdm
 from utils.dataset import AcademicDataset
 from functools import cmp_to_key
@@ -250,6 +251,7 @@ def train(model: General, optimizer, args):
         #         t.update(1)
         # print(f'Test Epoch {epoch_idx} Loss: {epoch_loss / n_test_batch} MF Loss: {epoch_mf_loss / n_test_batch} Emb Loss: {epoch_emb_loss / n_test_batch} Precision: {epoch_total_precision / n_test_batch} Recall: {epoch_total_recall / n_test_batch}')
         save_checkpoint(model, args, test_total_recall, epoch_idx)
+        np.save(os.path.join(args.save_dir, 'interact_prob.npy'), interact_prob.detach().cpu().numpy())
 
 
 

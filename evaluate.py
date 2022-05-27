@@ -68,43 +68,44 @@ paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
 
 @torch.no_grad()
 def evaluate_test_ann(model: General, test_file: str, output_dir: str):
-    n_test_batch = len(data_generator.real_test_index) // (data_generator.batch_size // 2) + 1
     output_file_name = "13_ShuyangJiang.csv"
+    # n_test_batch = len(data_generator.real_test_index) // (data_generator.batch_size // 2) + 1
     test_array: list = np.loadtxt(test_file, dtype=int, delimiter=' ').tolist()
-    model.eval()
-    # author_embedding = pretrained_author_embedding
-    # paper_embedding = pretrained_paper_embedding
-    with tqdm(total=n_test_batch) as t:
-        t.set_description(f"Evaluation")
-        epoch_loss, epoch_mf_loss, epoch_emb_loss = 0, 0, 0
-        epoch_total_precision, epoch_total_recall = 0, 0
-        for batch_idx in range(1, n_test_batch + 1):
+    interact_prob = np.load(os.path.join(train_args.save_dir, 'interact_prob.npy'))
+    # model.eval()
+    # # author_embedding = pretrained_author_embedding
+    # # paper_embedding = pretrained_paper_embedding
+    # with tqdm(total=n_test_batch) as t:
+    #     t.set_description(f"Evaluation")
+    #     epoch_loss, epoch_mf_loss, epoch_emb_loss = 0, 0, 0
+    #     epoch_total_precision, epoch_total_recall = 0, 0
+    #     for batch_idx in range(1, n_test_batch + 1):
 
-            test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
-            # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
+    #         test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
+    #         # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
 
-            author_embedding, paper_embedding, interact_prob = model(
-                pretrained_author_embedding, 
-                pretrained_paper_embedding,
-                test_papers,
-                test_authors,
-                paper_paper_map,
-                paper_padding_mask
-            )
-            test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
+    #         author_embedding, paper_embedding, interact_prob = model(
+    #             pretrained_author_embedding, 
+    #             pretrained_paper_embedding,
+    #             test_papers,
+    #             test_authors,
+    #             paper_paper_map,
+    #             paper_padding_mask
+    #         )
+    #         test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, interact_prob, train_args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
             
-            epoch_loss += test_loss
-            epoch_mf_loss += test_mf_loss
-            epoch_emb_loss += test_emb_loss
-            epoch_total_precision += test_precision
-            epoch_total_recall += test_recall
+    #         epoch_loss += test_loss
+    #         epoch_mf_loss += test_mf_loss
+    #         epoch_emb_loss += test_emb_loss
+    #         epoch_total_precision += test_precision
+    #         epoch_total_recall += test_recall
 
-            t.update(1)
-    test_loss = epoch_loss / n_test_batch
-    test_mf_loss = epoch_mf_loss / n_test_batch
-    test_total_precision = epoch_total_precision / n_test_batch
-    test_total_recall = epoch_total_recall / n_test_batch
-    print("Test loss: {:.4f}\tTest precision: {:.4f}\tTest recall: {:.4f}".format(test_loss, test_total_precision, test_total_recall))
+    #         t.update(1)
+    # test_loss = epoch_loss / n_test_batch
+    # test_mf_loss = epoch_mf_loss / n_test_batch
+    # test_total_precision = epoch_total_precision / n_test_batch
+    # test_total_recall = epoch_total_recall / n_test_batch
+    # print("Test loss: {:.4f}\tTest precision: {:.4f}\tTest recall: {:.4f}".format(test_loss, test_total_precision, test_total_recall))
     f = open(os.path.join(output_dir, output_file_name), 'w')
     f.write("Index,Probability\n")
     with tqdm(total=len(test_array)) as t:
