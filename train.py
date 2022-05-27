@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument('--NGCF_layers', type=int, default=3, help='ngcf layers')
     parser.add_argument('--ngcf_dropout', type=float, default=0.3, help='ngcf dropout rate')
     parser.add_argument('--rw_length', type=int, default=512, help='random walk length')
-    parser.add_argument('--only_feature', action='store_true', default=True)
+    parser.add_argument('--only_feature', action='store_true', default=False)
     parser.add_argument('--layer_size_list', type=List[int], default=[512, 768, 1024], help='increase of receptive field')
     
     
