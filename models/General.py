@@ -16,6 +16,7 @@ class General(nn.Module):
                 paper_adj:SparseTensor,author_adj:SparseTensor,
                 Paperdropout:float,Authordropout:float,
                 n_authors: int, n_papers: int, 
+                only_feature: bool,
                 num_layers: int, NGCFembed_dim: int, dropoutNGCF:float,
                 paper_dim: int, author_dim: int, layer_size_list: List[int],
                 args: ArgumentParser,
@@ -47,8 +48,12 @@ class General(nn.Module):
         # self.embed_layer = nn.Embedding(n_authors, author_dim)
         # self.RW = RandomWalk(RWembed_dim, stack_layers, dropoutRW, args)
         self.use_pretrain = use_pretrain
+        self.only_feature = only_feature
         if not use_pretrain:
             self.auther_emb = nn.Embedding(n_authors,author_dim)
+        if not only_feature:
+            self.paper_emb = nn.Embedding(n_papers, paper_dim)
+            self.compress = nn.Linear(paper_dim * 2, paper_dim)
         self.paper_adj = paper_adj
         self.author_adj = author_adj
         
@@ -63,6 +68,7 @@ class General(nn.Module):
     
     def forward(self, author_embedding: Tensor,
                 paper_embedding: Tensor,
+                paper_feature: Tensor,
                 paper_neighbor_embedding: Tensor,
                 batch_paper_index: List[int],
                 batch_author_index: List[int]=None):
@@ -75,9 +81,14 @@ class General(nn.Module):
         """
         if not self.use_pretrain:
             author_embedding = self.auther_emb(author_embedding)
-
-        author_embedding_new = self.au_GNN(author_embedding,self.author_adj)
-        paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
+        if not self.only_feature:
+            paper_emb = self.paper_emb(paper_embedding)
+            fused_paper_emb = torch.cat([paper_emb, paper_feature], -1)
+            paper_embedding = self.compress(fused_paper_emb)
+            
+            
+        author_embedding_new = self.au_GNN(author_embedding, self.author_adj)
+        paper_embedding_new = self.pa_GNN(paper_embedding, self.paper_adj)
 
         # gat_embedding = self.pa_GAT(paper_neighbor_embedding)
         # paper_embedding_sage = self.pa_sage(paper_neighbor_embedding)

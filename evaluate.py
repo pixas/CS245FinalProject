@@ -27,8 +27,9 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 data_generator = AcademicDataset(batch_size=train_args.batch_size, random_walk_length=train_args.rw_length,device=device, path=train_args.datapath)
 # pretrained_author_embedding = data_generator.author_embeddings
-pretrained_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
-pretrained_paper_embedding = data_generator.get_paper_embeddings()
+init_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
+init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=device)
+paper_feature = data_generator.get_paper_embeddings()
 
 
 
@@ -41,30 +42,27 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     model.eval()
     # author_embedding = pretrained_author_embedding
     # paper_embedding = pretrained_paper_embedding
-    with tqdm(total=n_test_batch) as t:
-        t.set_description(f"Evaluation")
-
-        for batch_idx in range(1, n_test_batch + 1):
-
-            test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
-            # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
-            paper_neighbor_embedding= []
-            author_embedding, paper_embedding, interact_prob = model(
-                pretrained_author_embedding, 
-                pretrained_paper_embedding,
-                paper_neighbor_embedding,
-                test_papers,
-                test_authors
-            )
-
-            t.update(1)
+    test_authors = test_array[:, 0].tolist()
+    test_papers = test_array[:, 1].tolist()
+    author_embedding, paper_embedding, _ = model(
+        init_author_embedding,
+        init_paper_embedding,
+        paper_feature,
+        [],
+        test_authors,
+        test_papers
+    )
+    test_author_embedding = author_embedding[test_authors]
+    test_paper_embedding = paper_embedding[test_papers]
+    predicted_prob = torch.sigmoid((test_author_embedding * test_paper_embedding).sum(1))
+    predicted_prob = predicted_prob.detach().cpu().numpy()
+    
     f = open(os.path.join(output_dir, output_file_name), 'w')
     f.write("Index,Probability\n")
     with tqdm(total=len(test_array)) as t:
         t.set_description("Evaluating:")
         for idx, (author, paper) in enumerate(test_array):
-            result = torch.sum(author_embedding[author] * paper_embedding[paper])
-            prob = torch.sigmoid(result).item()
+            prob = predicted_prob[idx]
             f.write("{},{}\n".format(idx, prob))
             t.update(1)
     f.close()

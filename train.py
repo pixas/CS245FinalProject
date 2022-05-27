@@ -28,6 +28,7 @@ def parse_args():
     parser.add_argument('--NGCF_layers', type=int, default=3, help='ngcf layers')
     parser.add_argument('--ngcf_dropout', type=float, default=0.3, help='ngcf dropout rate')
     parser.add_argument('--rw_length', type=int, default=512, help='random walk length')
+    parser.add_argument('--only_feature', action='store_true', default=True)
     parser.add_argument('--layer_size_list', type=List[int], default=[512, 768, 1024], help='increase of receptive field')
     
     
@@ -54,8 +55,9 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 data_generator = AcademicDataset(batch_size=args.batch_size, random_walk_length=args.rw_length, device=device, path=args.datapath)
 # pretrained_author_embedding = data_generator.author_embeddings
-pretrained_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
-pretrained_paper_embedding = data_generator.get_paper_embeddings()
+init_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
+init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=device)
+paper_feature = data_generator.get_paper_embeddings()
 
 
 def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index, neg_index, authors, papers):
@@ -144,8 +146,9 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
             # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
             paper_neighbor_embedding= []
             author_embedding, paper_embedding, interact_prob = model(
-                pretrained_author_embedding, 
-                pretrained_paper_embedding,
+                init_author_embedding, 
+                init_paper_embedding,
+                paper_feature,
                 paper_neighbor_embedding,
                 test_papers,
                 test_authors
@@ -200,8 +203,9 @@ def train(model: General, optimizer, args):
                 # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, train_papers)
                 paper_neighbor_embedding = []
                 author_embedding, paper_embedding, interact_prob = model(
-                    pretrained_author_embedding, 
-                    pretrained_paper_embedding,
+                    init_author_embedding, 
+                    init_paper_embedding,
+                    paper_feature,
                     paper_neighbor_embedding,
                     train_papers,
                     train_authors
@@ -269,7 +273,8 @@ if __name__ == '__main__':
         paper_dim=args.embed_dim,
         author_dim=args.embed_dim,
         layer_size_list=args.layer_size_list,
-        args=args
+        args=args,
+        only_feature=args.only_feature
     )
     model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
