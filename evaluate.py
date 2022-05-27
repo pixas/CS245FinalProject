@@ -89,6 +89,7 @@ if __name__ == '__main__':
         paper_dim=train_args.embed_dim,
         author_dim=train_args.embed_dim,
         layer_size_list=train_args.layer_size_list,
+        only_feature=train_args.only_feature
         args=train_args
     )
     model.to(device)
