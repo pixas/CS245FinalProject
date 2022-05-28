@@ -80,9 +80,9 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     iter_times = len(test_papers) // batch_size
     final_author_embeddings = []
     final_paper_embeddings = []
-    for i in range(iter_times):
-        batch_test_authors = test_authors[iter_times * batch_size: (iter_times + 1) * batch_size]
-        batch_test_papers = test_papers[iter_times * batch_size: (iter_times + 1) * batch_size]
+    for i in range(iter_times + 1):
+        batch_test_authors = test_authors[i * batch_size: (i + 1) * batch_size]
+        batch_test_papers = test_papers[i * batch_size: (i + 1) * batch_size]
         if not batch_test_papers:
             break
         author_embedding, paper_embedding, _ = model(
@@ -95,15 +95,17 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
             paper_paper_map,
             paper_padding_mask
         )
-        final_author_embeddings.append(author_embedding[batch_test_papers])
+
+        final_author_embeddings.append(author_embedding[batch_test_authors])
         final_paper_embeddings.append(paper_embedding[batch_test_papers])
-        
+    
+
         
     test_author_embedding = torch.cat(final_author_embeddings, 0)
     test_paper_embedding = torch.cat(final_paper_embeddings, 0)
     predicted_prob = torch.sigmoid((test_author_embedding * test_paper_embedding).sum(1))
     predicted_prob = predicted_prob.detach().cpu().numpy()
-    
+
     f = open(os.path.join(output_dir, output_file_name), 'w')
     f.write("Index,Probability\n")
     with tqdm(total=len(test_array)) as t:
