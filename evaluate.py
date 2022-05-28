@@ -88,8 +88,8 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
             init_paper_embedding,
             paper_feature,
             [],
-            test_authors,
-            test_papers,
+            batch_test_papers,
+            batch_test_authors,
             paper_paper_map,
             paper_padding_mask
         )
