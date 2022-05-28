@@ -107,7 +107,7 @@ class General(nn.Module):
         author_embedding_new = self.au_GNN(author_embedding,self.author_adj)
         # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
         batch_paper_query = paper_embedding[batch_paper_index].unsqueeze(1)
-        gat_embedding = self.pa_GAT(batch_paper_query, paper_emb_list)
+        gat_embedding = self.pa_GAT(batch_paper_query, paper_emb_list, mask_list)
         # paper_embedding_sage = self.pa_sage(paper_emb_list)
         # paper_embedding_new[test_papers] = paper_embedding_sage
         paper_embedding_new = paper_embedding.scatter(0, torch.tensor(batch_paper_index, 

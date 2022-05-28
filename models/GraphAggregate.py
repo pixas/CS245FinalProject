@@ -25,13 +25,15 @@ class GATBlock(nn.Module):
         nn.init.xavier_normal_(self.linear2.weight, 2 ** -0.5)
         
     
-    def forward(self, query: Tensor, key: Tensor, value: Tensor):
+    def forward(self, query: Tensor, key: Tensor, value: Tensor,
+                key_padding_mask: Tensor):
         # key_padding_mask = torch.all(x == 0, -1)
         # residual = query 
         query, _ = self.attention(
             query=query,
             key=key,
             value=value if value is not None else key,
+            key_padding_mask=key_padding_mask
         )
         # query = self.layer_norm(query + residual)
         # residual = query
@@ -50,9 +52,13 @@ class GAT(nn.Module):
             GATBlock(embed_dim, num_heads, dropout)
         for i in range(stack_layers)])
     
-    def forward(self, x: Tensor, y: Tensor):
+    def forward(self, x: Tensor, y: Tensor, key_padding_mask: Tensor):
+        key_padding_mask = 1 - key_padding_mask
+        key_padding_mask = torch.cat([torch.zeros(x.shape[0], 1).to(key_padding_mask), key_padding_mask], 1)
+        y = torch.cat([x, y], dim=1)
         for i, layer in enumerate(self.layers):
-            x = layer(x, y, y)
+            
+            x = layer(x, y, y, key_padding_mask)
         
         return x[:, 0, :]
     
