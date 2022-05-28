@@ -63,7 +63,7 @@ data_generator = AcademicDataset(batch_size=train_args.batch_size, random_walk_l
 init_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
 init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=device)
 paper_feature = data_generator.get_paper_embeddings()
-
+paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
 
 
 
@@ -82,7 +82,9 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
         paper_feature,
         [],
         test_authors,
-        test_papers
+        test_papers,
+        paper_paper_map,
+        paper_padding_mask
     )
     test_author_embedding = author_embedding[test_authors]
     test_paper_embedding = paper_embedding[test_papers]

@@ -55,6 +55,8 @@ class GAT(nn.Module):
             x = layer(x, y, y)
         
         return x[:, 0, :]
+    
+
 
 
 class GraphSage(nn.Module):
