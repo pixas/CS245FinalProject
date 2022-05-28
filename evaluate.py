@@ -76,16 +76,23 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
     # paper_embedding = pretrained_paper_embedding
     test_authors = test_array[:, 0].tolist()
     test_papers = test_array[:, 1].tolist()
-    author_embedding, paper_embedding, _ = model(
-        init_author_embedding,
-        init_paper_embedding,
-        paper_feature,
-        [],
-        test_authors,
-        test_papers,
-        paper_paper_map,
-        paper_padding_mask
-    )
+    batch_size = train_args.batch_size
+    iter_times = len(test_papers) // batch_size
+    for i in range(iter_times):
+        batch_test_authors = test_authors[iter_times * batch_size: (iter_times + 1) * batch_size]
+        batch_test_papers = test_papers[iter_times * batch_size: (iter_times + 1) * batch_size]
+        if not batch_test_papers:
+            break
+        author_embedding, paper_embedding, _ = model(
+            init_author_embedding,
+            init_paper_embedding,
+            paper_feature,
+            [],
+            test_authors,
+            test_papers,
+            paper_paper_map,
+            paper_padding_mask
+        )
     test_author_embedding = author_embedding[test_authors]
     test_paper_embedding = paper_embedding[test_papers]
     predicted_prob = torch.sigmoid((test_author_embedding * test_paper_embedding).sum(1))
