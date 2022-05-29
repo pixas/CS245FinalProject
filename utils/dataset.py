@@ -48,6 +48,7 @@ class AcademicDataset(object):
         self.bipartite_lap_path = f'{path}/bipartite_lap.pkl'
 
         self.author_paper_map_path = f'{path}/author_paper_map.pkl'
+        self.test_author_paper_map_path = f'{path}/test_author_paper_map.pkl'
         self.train_idx_path = f'{path}/train_idx.pkl'
         self.train_authors_path = f'{path}/train_authors.pkl'
         self.train_papers_path = f'{path}/train_papers.pkl'
@@ -55,6 +56,7 @@ class AcademicDataset(object):
         # data path end #
         self.sample_number = sample_number
         self.author_paper_map = self.get_author_paper_map()
+        self.test_author_paper_map = self.get_test_author_paper_map()
         self._paper_paper_map, self._paper_padding_mask = self.get_paper_paper_map()
         self._author_author_map = self.get_author_author_map()
         
@@ -255,6 +257,13 @@ class AcademicDataset(object):
     
         return author_paper_map
 
+    def get_test_author_paper_map(self) -> Dict[int, Set[int]]:
+        t1 = time.time()
+        with open(self.test_author_paper_map_path, 'rb') as f:
+            test_author_paper_map = pickle.load(f)
+        print(f'Load test author-paper map from {self.test_author_paper_map_path}, time cost: {time.time() - t1: .3f}s')
+        return test_author_paper_map
+
     # def sample(self) -> Tuple[Tensor, Tensor]:
     #     """
     #     Sample two random walk path starting from two random nodes(author & paper)
@@ -328,7 +337,7 @@ class AcademicDataset(object):
             flag = False
             while not flag:
                 random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.paper_cnt, size=1)[0]
-                if random_paper not in self.author_paper_map[neg_train_author]:
+                if random_paper not in self.author_paper_map[neg_train_author] and random_paper not in self.test_author_paper_map[neg_train_author]:
                     neg_train_index.append([neg_train_author, random_paper - self.author_cnt])
                     flag = True
 
