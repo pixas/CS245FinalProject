@@ -40,6 +40,7 @@ class PrepareData(object):
         self.paper_paper_map_path = f'{path}/paper_paper_map.pkl'
         self.paper_paper_nei_path = f'{path}/paper_paper_nei.pkl'
         self.paper_mask = f'{path}/paper_mask.npy'
+        self.author_mask = f'{path}/author_mask.npy'
         self.bipartite_adj_path = f'{path}/bipartite_adj.pkl'
         self.bipartite_lap_path = f'{path}/bipartite_lap.pkl'
 
@@ -82,9 +83,12 @@ class PrepareData(object):
             maxl = max([len(coauthors) for coauthors in author_author_map])
             author_padding_mask = np.zeros((self.author_cnt, maxl))
             for i in range(len(author_author_map)):
+                author_padding_mask[i, :len(author_author_map[i])] = 1
                 author_author_map[i] = author_author_map[i] + [0] * (maxl - len(author_author_map[i]))
-                author_padding_mask[i, : len()]
+            author_author_map = np.array(author_author_map)
+
         print(f'Build author-author map, time cost: {time.time() - t1: .3f}s')
+        np.save(self.author_mask, author_author_map)
         with open(self.author_author_map_path, 'wb') as f:
             pickle.dump(author_author_map, f)
         return author_author_map

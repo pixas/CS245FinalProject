@@ -20,7 +20,7 @@ def parse_args():
     parser.add_argument('--module_type', nargs='?', default='LSTM', help='Module in coauthor and citation network')
     parser.add_argument('--lr', type=float, default=0.0001, help='Learning rate.')
     parser.add_argument('--epoch', type=int, default=100, help='Number of epochs')
-    parser.add_argument('--keep_last_epochs', type=int, default=5, help='only keep last epochs')
+    parser.add_argument('--keep_last_epochs', type=int, default=10, help='only keep last epochs')
     parser.add_argument('--batch_size', type=int, default=8192, help='batch samples for positive and negative samples')
     
     parser.add_argument('--embed_dim', type=int, default=512, help='embedding dimension')
@@ -60,6 +60,7 @@ init_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=dev
 init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=device)
 paper_feature = data_generator.get_paper_embeddings()
 paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
+author_author_map, author_padding_mask = data_generator.get_author_author_map()
 
 def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index, neg_index, authors, papers):
     author_embeddings = author_embedding[authors]
@@ -145,16 +146,17 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
 
             test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
             # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
-            paper_neighbor_embedding= []
+
             author_embedding, paper_embedding, interact_prob = model(
                 init_author_embedding, 
                 init_paper_embedding,
                 paper_feature,
-                paper_neighbor_embedding,
                 test_papers,
                 test_authors,
                 paper_paper_map,
-                paper_padding_mask
+                paper_padding_mask,
+                author_author_map,
+                author_padding_mask
             )
 
             test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
@@ -208,11 +210,12 @@ def train(model: General, optimizer, args):
                     init_author_embedding, 
                     init_paper_embedding,
                     paper_feature,
-                    [],
                     train_papers,
                     train_authors,
                     paper_paper_map,
-                    paper_padding_mask
+                    paper_padding_mask,
+                    author_author_map,
+                    author_padding_mask
                 )
                 
                 # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()

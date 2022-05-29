@@ -44,6 +44,7 @@ class AcademicDataset(object):
         self.paper_paper_map_path = f'{path}/paper_paper_map.pkl'
         self.paper_paper_nei_path = f'{path}/paper_paper_nei.pkl'
         self.paper_mask_path = f'{path}/paper_mask.npy'
+        self.author_mask_path = f'{path}/author_mask.npy'
         self.bipartite_adj_path = f'{path}/bipartite_adj.pkl'
         self.bipartite_lap_path = f'{path}/bipartite_lap.pkl'
 
@@ -112,9 +113,10 @@ class AcademicDataset(object):
         t1 = time.time()
         with open(self.author_author_map_path, 'rb') as f:
             author_author_map = pickle.load(f)
+        author_padding_mask = np.load(self.author_mask_path)
         print(f'Load author-author map from {self.author_author_map_path}, time cost: {time.time() - t1: .3f}s')
-      
-        return author_author_map
+        author_padding_mask = torch.from_numpy(author_padding_mask).to(self.device).to(torch.float32)
+        return author_author_map, author_padding_mask
 
     def get_author_adj_matrix(self) -> SparseTensor:
         """Returns the adjacency matrix of the coauthor graph.

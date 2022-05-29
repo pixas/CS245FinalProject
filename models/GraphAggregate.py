@@ -54,7 +54,8 @@ class GAT(nn.Module):
     
     def forward(self, x: Tensor, y: Tensor, key_padding_mask: Tensor):
         key_padding_mask = 1 - key_padding_mask
-
+        # key_padding_mask = torch.cat([torch.zeros(x.shape[0], 1).to(key_padding_mask), key_padding_mask], 1)
+        # y = torch.cat([x, y], dim=1)
         for i, layer in enumerate(self.layers):
             
             x = layer(x, y, y, key_padding_mask)
