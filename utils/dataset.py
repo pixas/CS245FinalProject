@@ -334,6 +334,7 @@ class AcademicDataset(object):
             # return True if it can be a negative sample
             adj_authors = self._author_author_map[author]
             adj_papers = self._paper_paper_map[paper]
+            adj_papers = [p + self.author_cnt for p in adj_papers]
             for a in adj_authors:
                 if paper in self.author_paper_map[a]:
                     return False
