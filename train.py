@@ -66,7 +66,7 @@ def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, aut
     interact_prob = (author_embedding * paper_embedding).sum(-1)  # (B, )
     interact_prob = torch.sigmoid(interact_prob)
     batch_size = interact_prob.shape[0]
-    print(len(pos_index), len(neg_index))
+
     assert len(pos_index) + len(neg_index) == batch_size
     # score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
     
