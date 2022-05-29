@@ -88,7 +88,8 @@ class General(nn.Module):
             paper_emb = self.paper_emb(paper_embedding)
             fused_paper_emb = torch.cat([paper_emb, paper_feature], -1)
             paper_embedding = self.compress(fused_paper_emb)
-            
+        else:
+            paper_embedding = paper_feature
             
         author_embedding_new = self.au_GNN(author_embedding, self.author_adj)
         # paper_embedding_new = paper_embedding
