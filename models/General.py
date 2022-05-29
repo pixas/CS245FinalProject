@@ -92,6 +92,7 @@ class General(nn.Module):
             paper_embedding = paper_feature
             
         author_embedding_new = self.au_GNN(author_embedding, self.author_adj)
+        batch_author_embedding = author_embedding_new[batch_author_index]
         # paper_embedding_new = paper_embedding
 
         paper_list = paper_paper_map[batch_paper_index]
@@ -108,14 +109,14 @@ class General(nn.Module):
         author_embedding_new = self.au_GNN(author_embedding,self.author_adj)
         # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
         batch_paper_query = paper_embedding[batch_paper_index].unsqueeze(1)
-        gat_embedding = self.pa_GAT(batch_paper_query, paper_emb_list, mask_list)
+        batch_gat_embedding = self.pa_GAT(batch_paper_query, paper_emb_list, mask_list)
         # paper_embedding_sage = self.pa_sage(paper_emb_list)
         # paper_embedding_new[test_papers] = paper_embedding_sage
-        paper_embedding_new = paper_embedding.scatter(0, torch.tensor(batch_paper_index, 
-                                                                    dtype=torch.int64, 
-                                                                    device=author_embedding.device).unsqueeze(-1).repeat(1, paper_embedding.shape[-1]), gat_embedding)
+        # paper_embedding_new = paper_embedding.scatter(0, torch.tensor(batch_paper_index, 
+        #                                                             dtype=torch.int64, 
+        #                                                             device=author_embedding.device).unsqueeze(-1).repeat(1, paper_embedding.shape[-1]), batch_gat_embedding)
         # paper_embedding_new = paper_embedding
         # author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
-        interact_prob = torch.einsum("nd,md->nm", author_embedding_new, paper_embedding_new)
-        interact_prob = torch.sigmoid(interact_prob)
-        return author_embedding_new, paper_embedding_new, interact_prob
+        # interact_prob = torch.einsum("nd,md->nm", author_embedding_new, paper_embedding_new)
+        # interact_prob = torch.sigmoid(interact_prob)
+        return batch_author_embedding, batch_gat_embedding

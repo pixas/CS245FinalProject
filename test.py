@@ -32,6 +32,12 @@ if __name__ == '__main__':
     # with open("./data/author_vec.pkl", 'rb') as f:
     #     x = pickle.load(f)
     # print(x.shape)
-    arr = np.loadtxt()
+    # arr = np.loadtxt()
     # print(a.shape)
+    a = torch.tensor([[0, 1], [1, 1], [4, 0]])
+    b = torch.tensor([[0, 1], [1, 1], [3, 0]])
+    c = a * b
+    d = torch.sum(c, dim=1)
+    print(c)
+    print(d)
     
