@@ -61,25 +61,26 @@ init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=devic
 paper_feature = data_generator.get_paper_embeddings()
 paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
 
-def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index, neg_index, authors, papers):
-    author_embeddings = author_embedding[authors]
-    paper_embeddings = paper_embedding[papers]
-    author_embedding = F.normalize(author_embedding, p=2, dim=1)
-    paper_embedding = F.normalize(paper_embedding, p=2, dim=1)
+def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, authors, papers):
+    # interact prob
+    interact_prob = (author_embedding * paper_embedding).sum(-1)  # (B, )
+    interact_prob = torch.sigmoid(interact_prob)
+    batch_size = interact_prob.shape[0]
+    print(len(pos_index), len(neg_index))
+    assert len(pos_index) + len(neg_index) == batch_size
     # score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
     
-    fetch_pos_index = list(zip(*pos_index))
-    fetch_neg_index = list(zip(*neg_index))
-    pos_scores = interact_prob[fetch_pos_index[0], fetch_pos_index[1]]
-    neg_scores = interact_prob[fetch_neg_index[0], fetch_neg_index[1]]
+
+    pos_scores = interact_prob[:batch_size // 2]
+    neg_scores = interact_prob[batch_size // 2:]
+
 
     mf_loss = (torch.sum(1-pos_scores) + torch.sum(neg_scores)) / (len(pos_index) + len(neg_index))
-    # mf_loss = F.nll_loss(pos_scores, torch.ones((pos_scores.shape[0]), device=interact_prob.device)) + \
-    #     F.nll_loss(neg_scores, torch.zeros((pos_scores.shape[0]), device=interact_prob.device))
+
     
     # mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
 
-    regularizer = (torch.norm(author_embeddings) ** 2 + torch.norm(paper_embeddings) ** 2) / 2
+    regularizer = (torch.norm(author_embedding) ** 2 + torch.norm(paper_embedding) ** 2) / 2
     emb_loss = decay * regularizer / (len(authors) + len(papers))
     
     # pred_pos = torch.sum(score_matrix >= 0)
