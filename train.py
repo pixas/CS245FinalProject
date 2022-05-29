@@ -147,7 +147,7 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
             test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
             # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
             paper_neighbor_embedding= []
-            author_embedding, paper_embedding, interact_prob = model(
+            author_embedding, paper_embedding = model(
                 init_author_embedding, 
                 init_paper_embedding,
                 paper_feature,
@@ -158,7 +158,7 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
                 paper_padding_mask
             )
 
-            test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
+            test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
             
             epoch_loss += test_loss
             epoch_mf_loss += test_mf_loss
@@ -205,7 +205,7 @@ def train(model: General, optimizer, args):
 
                 train_pos_index, train_neg_index, train_authors, train_papers = data_generator.sample_train()
                 # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, train_papers)
-                author_embedding, paper_embedding, interact_prob = model(
+                author_embedding, paper_embedding = model(
                     init_author_embedding, 
                     init_paper_embedding,
                     paper_feature,
@@ -217,7 +217,7 @@ def train(model: General, optimizer, args):
                 )
                 
                 # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()
-                loss, mf_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, interact_prob, args.decay, train_pos_index, train_neg_index, train_authors, train_papers)
+                loss, mf_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, args.decay, train_pos_index, train_neg_index, train_authors, train_papers)
                 
                 optimizer.zero_grad()
                 loss.backward()
@@ -231,33 +231,13 @@ def train(model: General, optimizer, args):
                 t.set_postfix({"loss": f"{loss:.4f}", 'mf_loss': f"{mf_loss:.4f}", 'emb_loss': f"{emb_loss:.4f}", 'precision': f"{precision:.4f}", 'recall': f"{recall:.4f}"})
                 t.update(1)
         print(f'Train Epoch {epoch_idx:.4f} Loss: {epoch_loss / n_train_batch:.4f} MF Loss: {epoch_mf_loss / n_train_batch:.4f} Emb Loss: {epoch_emb_loss / n_train_batch:.4f} Precision: {epoch_total_precision / n_train_batch:.4f} Recall: {epoch_total_recall / n_train_batch:.4f}')
+        
         test_loss, test_mf_loss, test_total_precision, test_total_recall = test_one_epoch(model, args, epoch_idx)
         print(f'Test Epoch {epoch_idx:.4f} Loss: {test_loss:.4f} MF Loss: {test_mf_loss:.4f} Precision: {test_total_precision:.4f} Recall: {test_total_recall:.4f}')
-        # n_test_batch = len(data_generator.real_test_index) // (data_generator.batch_size // 2) + 1
-        # with tqdm(total=n_test_batch) as t:
-        #     t.set_description(f"Test Epoch {epoch_idx}")
-        #     epoch_loss, epoch_mf_loss, epoch_emb_loss = 0, 0, 0
-        #     epoch_total_precision, epoch_total_recall = 0, 0
-        #     for batch_idx in range(1, n_train_batch + 1):
-        #         author_path, paper_path = data_generator.sample()
-        #         author_embedding, paper_embedding = model(
-        #             pretrained_author_embedding, 
-        #             pretrained_paper_embedding,
-        #             author_path,
-        #             paper_path
-        #         )
-        #         test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
-        #         test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, 0.1, test_pos_index, test_neg_index, test_authors, test_papers)
-                
-        #         epoch_loss += test_loss
-        #         epoch_mf_loss += test_mf_loss
-        #         epoch_emb_loss += test_emb_loss
-        #         epoch_total_precision += test_precision
-        #         epoch_total_recall += test_recall
-        #         t.update(1)
-        # print(f'Test Epoch {epoch_idx} Loss: {epoch_loss / n_test_batch} MF Loss: {epoch_mf_loss / n_test_batch} Emb Loss: {epoch_emb_loss / n_test_batch} Precision: {epoch_total_precision / n_test_batch} Recall: {epoch_total_recall / n_test_batch}')
+
         save_checkpoint(model, args, test_total_recall, epoch_idx)
-        np.save(os.path.join(args.save_dir, 'interact_prob.npy'), interact_prob.detach().cpu().numpy())
+        print("*" * 100)
+        # np.save(os.path.join(args.save_dir, 'interact_prob.npy'), interact_prob.detach().cpu().numpy())
 
 
 
