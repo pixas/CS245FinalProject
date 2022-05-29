@@ -69,23 +69,24 @@ class PrepareData(object):
             author 1 has coauthored with author 10 and author 11
             return {1: {10, 11}, 10: {1}, 11: {1}}
         """
-        try:
-            t1 = time.time()
-            with open(self.author_author_map_path, 'rb') as f:
-                author_author_map = pickle.load(f)
-            print(f'Load author-author map from {self.author_author_map_path}, time cost: {time.time() - t1: .3f}s')
-        except:
-            t1 = time.time()
-            with open(self.author_graph_path, 'r') as f:
-                lines = f.readlines()
-                author_author_map = {author: set() for author in range(self.author_cnt)}
-                for line in lines:
-                    for author, coauthor in [line.strip().split(' ')]:
-                        author_author_map[int(author)].add(int(coauthor))
-                        author_author_map[int(coauthor)].add(int(author))
-            print(f'Build author-author map, time cost: {time.time() - t1: .3f}s')
-            with open(self.author_author_map_path, 'wb') as f:
-                pickle.dump(author_author_map, f)
+
+        t1 = time.time()
+        with open(self.author_graph_path, 'r') as f:
+            lines = f.readlines()
+            author_author_map = [list() for author in range(self.author_cnt)]
+            for line in lines:
+                for author, coauthor in [line.strip().split(' ')]:
+                    author_author_map[int(author)].append(int(coauthor))
+                    author_author_map[int(coauthor)].append(int(author))
+            
+            maxl = max([len(coauthors) for coauthors in author_author_map])
+            author_padding_mask = np.zeros((self.author_cnt, maxl))
+            for i in range(len(author_author_map)):
+                author_author_map[i] = author_author_map[i] + [0] * (maxl - len(author_author_map[i]))
+                author_padding_mask[i, : len()]
+        print(f'Build author-author map, time cost: {time.time() - t1: .3f}s')
+        with open(self.author_author_map_path, 'wb') as f:
+            pickle.dump(author_author_map, f)
         return author_author_map
 
     def get_author_adj_matrix(self) -> SparseTensor:
