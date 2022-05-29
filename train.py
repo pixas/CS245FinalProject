@@ -147,7 +147,7 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
             test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
             # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
 
-            author_embedding, paper_embedding, interact_prob = model(
+            author_embedding, paper_embedding = model(
                 init_author_embedding, 
                 init_paper_embedding,
                 paper_feature,
@@ -206,7 +206,7 @@ def train(model: General, optimizer, args):
 
                 train_pos_index, train_neg_index, train_authors, train_papers = data_generator.sample_train()
                 # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, train_papers)
-                author_embedding, paper_embedding, interact_prob = model(
+                author_embedding, paper_embedding = model(
                     init_author_embedding, 
                     init_paper_embedding,
                     paper_feature,
