@@ -335,8 +335,8 @@ class AcademicDataset(object):
                     flag = True
 
         # get authors and papers
-        train_authors = list(set([pos[0] for pos in pos_train_index] + [neg[0] for neg in neg_train_index]))
-        train_papers = list(set([pos[1] for pos in pos_train_index] + [neg[1] for neg in neg_train_index]))
+        train_authors = [pos[0] for pos in pos_train_index] + [neg[0] for neg in neg_train_index]
+        train_papers = [pos[1] for pos in pos_train_index] + [neg[1] for neg in neg_train_index]
         
 
         return pos_train_index, neg_train_index, train_authors, train_papers
@@ -368,8 +368,8 @@ class AcademicDataset(object):
                     flag = True
 
         # get authors and papers
-        test_authors = list(set([pos[0] for pos in pos_test_index] + [neg[0] for neg in neg_test_index]))
-        test_papers = list(set([pos[1] for pos in pos_test_index] + [neg[1] for neg in neg_test_index]))
+        test_authors = [pos[0] for pos in pos_test_index] + [neg[0] for neg in neg_test_index]
+        test_papers = [pos[1] for pos in pos_test_index] + [neg[1] for neg in neg_test_index]
 
         return pos_test_index, neg_test_index, test_authors, test_papers
 

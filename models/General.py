@@ -104,9 +104,9 @@ class General(nn.Module):
                                                    batch_paper_index,
                                                    paper_embedding,
                                                    self.pa_GAT)
-        interact_prob = torch.einsum("nd,md->nm", author_embedding_new, paper_embedding_new)
-        interact_prob = torch.sigmoid(interact_prob)
-        return author_embedding_new, paper_embedding_new, interact_prob
+        # interact_prob = torch.einsum("nd,md->nm", author_embedding_new, paper_embedding_new)
+        # interact_prob = torch.sigmoid(interact_prob)
+        return author_embedding_new, paper_embedding_new
 
     def batch_gat_layer(self, 
                         inter_map: List[List[int]],
@@ -118,17 +118,17 @@ class General(nn.Module):
         batch_mask = padding_mask[batch_index]
         B, K = batch_interact.shape
         batch_interact = np.reshape(batch_interact, (-1, 1))
-        batch_embedding = embedding[batch_interact].reshape(B, K< -1)
+        batch_embedding = embedding[batch_interact].reshape(B, K, -1)
         batch_embedding = batch_embedding * batch_mask.unsqueeze(-1)
         
         batch_query = embedding[batch_index].unsqueeze(1)
         batch_gat_embedding = layer(batch_query, batch_embedding, batch_mask)
-        batch_embedding_new = embedding.scatter(0,
-                                                torch.tensor(batch_index,
-                                                             dtype=torch.int64,
-                                                             device=embedding.device).unsqueeze(-1).repeat(
-                                                                 1,
-                                                                 embedding.shape[-1]
-                                                             ), batch_gat_embedding
-        )
-        return batch_embedding_new
+        # batch_embedding_new = embedding.scatter(0,
+        #                                         torch.tensor(batch_index,
+        #                                                      dtype=torch.int64,
+        #                                                      device=embedding.device).unsqueeze(-1).repeat(
+        #                                                          1,
+        #                                                          embedding.shape[-1]
+        #                                                      ), batch_gat_embedding
+        # )
+        return batch_gat_embedding
