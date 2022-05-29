@@ -330,6 +330,18 @@ class AcademicDataset(object):
         pos_train_index = random.sample(self.real_train_index, pos_train_num)
 
         # sample negative
+        def neg_filter(author, paper):
+            # return True if it can be a negative sample
+            adj_authors = self._author_author_map[author]
+            adj_papers = self._paper_paper_map[paper]
+            for a in adj_authors:
+                if paper in self.author_paper_map[a]:
+                    return False
+            for p in adj_papers:
+                if p in self.author_paper_map[author]:
+                    return False
+            return True
+
         author_list = list(range(self.author_cnt))
         neg_train_authors = random.sample(author_list, neg_train_num)
         neg_train_index = []
@@ -337,7 +349,11 @@ class AcademicDataset(object):
             flag = False
             while not flag:
                 random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.paper_cnt, size=1)[0]
-                if random_paper not in self.author_paper_map[neg_train_author] and random_paper not in self.test_author_paper_map[neg_train_author]:
+                if (
+                    random_paper not in self.author_paper_map[neg_train_author] 
+                    and random_paper not in self.test_author_paper_map[neg_train_author]
+                    and neg_filter(neg_train_author, random_paper)
+                ):
                     neg_train_index.append([neg_train_author, random_paper - self.author_cnt])
                     flag = True
 
