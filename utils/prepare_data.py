@@ -43,6 +43,7 @@ class PrepareData(object):
         self.author_mask = f'{path}/author_mask.npy'
         self.bipartite_adj_path = f'{path}/bipartite_adj.pkl'
         self.bipartite_lap_path = f'{path}/bipartite_lap.pkl'
+        self.test_ann_path = f'{path}/bipartite_test_ann.txt'
 
         self.author_paper_map_path = f'{path}/author_paper_map.pkl'
         self.train_idx_path = f'{path}/train_idx.pkl'

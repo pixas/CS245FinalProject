@@ -47,6 +47,7 @@ class AcademicDataset(object):
         self.author_mask_path = f'{path}/author_mask.npy'
         self.bipartite_adj_path = f'{path}/bipartite_adj.pkl'
         self.bipartite_lap_path = f'{path}/bipartite_lap.pkl'
+        self.bipartite_test_ann_path = f'{path}/bipartite_test_ann.txt'
 
         self.author_paper_map_path = f'{path}/author_paper_map.pkl'
         self.train_idx_path = f'{path}/train_idx.pkl'
@@ -58,7 +59,13 @@ class AcademicDataset(object):
         self.author_paper_map = self.get_author_paper_map()
         self._paper_paper_map, self._paper_padding_mask = self.get_paper_paper_map()
         self._author_author_map = self.get_author_author_map()
-        
+        self.forbidden_test_ann = np.loadtxt(self.bipartite_test_ann_path, int, delimiter=' ')
+        self.forbidden_pair: Dict[int, set] = {}
+        for i, j in self.forbidden_test_ann:
+            if i not in self.forbidden_pair:
+                self.forbidden_pair[i] = set([j])
+            else:
+                self.forbidden_pair[i].add(j)
         self.train_index, self.train_authors, self.train_papers = self.get_train_idx()
         random.shuffle(self.train_index)
         self.real_train_index = self.train_index[:int(len(self.train_index) * train_ratio)]
@@ -330,7 +337,7 @@ class AcademicDataset(object):
             flag = False
             while not flag:
                 random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.paper_cnt, size=1)[0]
-                if random_paper not in self.author_paper_map[neg_train_author]:
+                if random_paper not in self.author_paper_map[neg_train_author] and ((neg_train_author not in self.forbidden_pair) or (random_paper not in self.forbidden_pair[neg_train_author])):
                     neg_train_index.append([neg_train_author, random_paper - self.author_cnt])
                     flag = True
 
@@ -363,7 +370,7 @@ class AcademicDataset(object):
             flag = False
             while not flag:
                 random_paper = np.random.randint(low=self.author_cnt, high=self.author_cnt + self.paper_cnt, size=1)[0]
-                if random_paper not in self.author_paper_map[neg_test_author]:
+                if random_paper not in self.author_paper_map[neg_test_author] and (neg_test_author not in self.forbidden_pair or random_paper not in self.forbidden_pair[neg_test_author]):
                     neg_test_index.append([neg_test_author, random_paper - self.author_cnt])
                     flag = True
 
