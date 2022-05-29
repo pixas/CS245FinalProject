@@ -167,8 +167,8 @@ class PrepareData(object):
             maxl = max([len(cited_papers) for cited_papers in paper_paper_map])
             padding_mask = np.zeros((self.paper_cnt, maxl))
             for i in range(len(paper_paper_map)):
-                paper_paper_map[i] = paper_paper_map[i] + [0]*(maxl-len(paper_paper_map[i]))
                 padding_mask[i, :len(paper_paper_map[i])] = 1
+                paper_paper_map[i] = paper_paper_map[i] + [0]*(maxl-len(paper_paper_map[i]))
             
             paper_paper_map = np.array(paper_paper_map)
                     
