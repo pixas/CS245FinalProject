@@ -96,9 +96,10 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
             paper_padding_mask
         )
 
-        final_author_embeddings.append(author_embedding[batch_test_authors])
-        final_paper_embeddings.append(paper_embedding[batch_test_papers])
-    
+        # final_author_embeddings.append(author_embedding[batch_test_authors])
+        # final_paper_embeddings.append(paper_embedding[batch_test_papers])
+        final_author_embeddings.append(author_embedding)
+        final_paper_embeddings.append(paper_embedding)    
 
         
     test_author_embedding = torch.cat(final_author_embeddings, 0)
