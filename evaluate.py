@@ -85,7 +85,7 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
         batch_test_papers = test_papers[i * batch_size: (i + 1) * batch_size]
         if not batch_test_papers:
             break
-        author_embedding, paper_embedding, _ = model(
+        author_embedding, paper_embedding = model(
             init_author_embedding,
             init_paper_embedding,
             paper_feature,
@@ -144,4 +144,3 @@ if __name__ == '__main__':
     model.to(device)
     model.load_state_dict(model_parameter['model_state'])
     evaluate_test_ann(model, TEST_FILE_TXT, args.output_dir)
-    
