@@ -11,8 +11,6 @@ from tqdm import tqdm
 from utils.dataset import AcademicDataset
 from typing import List
 
-TRAIN_FILE_TXT = 'data/bipartite_train.txt'
-TEST_FILE_TXT = 'data/bipartite_test_ann.txt'
 # TODO: load from file
 def parse_args():
     parser = argparse.ArgumentParser(description="Run General")
@@ -65,6 +63,8 @@ init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=devic
 paper_feature = data_generator.get_paper_embeddings()
 paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
 
+TRAIN_FILE_TXT = f'{train_args.datapath}/bipartite_train.txt'
+TEST_FILE_TXT = f'{train_args.datapath}/bipartite_test_ann.txt'
 
 
 @torch.no_grad()
