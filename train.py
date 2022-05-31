@@ -146,7 +146,7 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
     # paper_embedding = pretrained_paper_embedding
     with tqdm(total=n_test_batch) as t:
         t.set_description(f"Test Epoch {epoch_idx}")
-        epoch_loss, epoch_mf_loss, epoch_emb_loss = 0, 0, 0
+        epoch_loss, epoch_bce_loss, epoch_emb_loss = 0, 0, 0
         epoch_total_precision, epoch_total_recall = 0, 0
         for batch_idx in range(1, n_test_batch + 1):
 
@@ -164,22 +164,22 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
                 paper_padding_mask
             )
 
-            test_loss, test_mf_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
+            test_loss, test_bce_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
             
             epoch_loss += test_loss
-            epoch_mf_loss += test_mf_loss
+            epoch_bce_loss += test_bce_loss
             epoch_emb_loss += test_emb_loss
             epoch_total_precision += test_precision
             epoch_total_recall += test_recall
             
-            t.set_postfix({"loss": f"{test_loss:.4f}", 'mf_loss': f"{test_mf_loss:.4f}", 'precision': f"{test_precision:.4f}", 'recall': f"{test_recall:.4f}"})
+            t.set_postfix({"loss": f"{test_loss:.4f}", 'bce_loss': f"{test_bce_loss:.4f}", 'precision': f"{test_precision:.4f}", 'recall': f"{test_recall:.4f}"})
             t.update(1)
     
     test_loss = epoch_loss / n_test_batch
-    test_mf_loss = epoch_mf_loss / n_test_batch
+    test_bce_loss = epoch_bce_loss / n_test_batch
     test_total_precision = epoch_total_precision / n_test_batch
     test_total_recall = epoch_total_recall / n_test_batch
-    return test_loss, test_mf_loss, test_total_precision, test_total_recall
+    return test_loss, test_bce_loss, test_total_precision, test_total_recall
 
 
 def train(model: General, optimizer, args):
