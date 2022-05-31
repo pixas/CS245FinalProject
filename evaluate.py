@@ -85,7 +85,7 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
         batch_test_papers = test_papers[i * batch_size: (i + 1) * batch_size]
         if not batch_test_papers:
             break
-        author_embedding, paper_embedding, _ = model(
+        author_embedding, paper_embedding = model(
             init_author_embedding,
             init_paper_embedding,
             paper_feature,
@@ -96,8 +96,8 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
             paper_padding_mask
         )
 
-        final_author_embeddings.append(author_embedding[batch_test_authors])
-        final_paper_embeddings.append(paper_embedding[batch_test_papers])
+        final_author_embeddings.append(author_embedding)
+        final_paper_embeddings.append(paper_embedding)
     
 
         
