@@ -15,7 +15,7 @@ class GATBlock(nn.Module):
             dropout=dropout, batch_first=True
         )
         
-        # self.layer_norm = nn.LayerNorm(embed_dim)
+        self.layer_norm = nn.LayerNorm(embed_dim)
         # self.linear1 = nn.Linear(embed_dim, embed_dim * 4)
         # self.linear2 = nn.Linear(embed_dim * 4, embed_dim)
         # self.out_norm = nn.LayerNorm(embed_dim)
@@ -28,14 +28,14 @@ class GATBlock(nn.Module):
     def forward(self, query: Tensor, key: Tensor, value: Tensor,
                 key_padding_mask: Tensor):
         # key_padding_mask = torch.all(x == 0, -1)
-        # residual = query 
+        residual = query 
         query, _ = self.attention(
             query=query,
             key=key,
             value=value if value is not None else key,
             key_padding_mask=key_padding_mask
         )
-        # query = self.layer_norm(query + residual)
+        query = self.layer_norm(query + residual)
         # residual = query
         # query = self.linear2(F.gelu(self.linear1(query)))
         # query = self.out_norm(query + residual)
