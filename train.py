@@ -275,7 +275,7 @@ if __name__ == '__main__':
         layer_size_list=args.layer_size_list,
         args=args,
         only_feature=args.only_feature,
-        norm_adj=adj_matrix
+        norm_adj=lap_matrix
     )
     model.to(device)
     optimizer = optim.Adam(model.parameters(), lr=args.lr)
