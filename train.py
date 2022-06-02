@@ -57,18 +57,19 @@ def parse_args():
 args = parse_args()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 tensorbaord_dir = os.path.join(args.log_dir, args.exp_name)
-writer = SummaryWriter(tensorbaord_dir)
+
 data_generator = AcademicDataset(batch_size=args.batch_size, random_walk_length=args.rw_length, device=device, path=args.datapath)
 # pretrained_author_embedding = data_generator.author_embeddings
 init_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
 init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=device)
 paper_feature = data_generator.get_paper_embeddings()
 paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
+adj_matrix, lap_matrix = data_generator.get_bipartite_matrix()
 
 def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, authors, papers):
     # interact prob
     interact_prob = (author_embedding * paper_embedding).sum(-1)  # (B, )
-    # interact_prob = torch.sigmoid(interact_prob)
+    interact_prob = torch.sigmoid(interact_prob)
     batch_size = interact_prob.shape[0]
 
     assert len(pos_index) + len(neg_index) == batch_size
@@ -77,11 +78,11 @@ def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, aut
 
     pos_scores = interact_prob[:batch_size // 2]
     neg_scores = interact_prob[batch_size // 2:]
-    target = torch.ones_like(interact_prob).to(interact_prob)
-    target[batch_size // 2:] = 0.
-    loss_fn = torch.nn.BCEWithLogitsLoss()
-    bce_loss = loss_fn(interact_prob, target)
-    # bce_loss = (torch.sum(1-pos_scores) + torch.sum(neg_scores)) / (len(pos_index) + len(neg_index))
+    # target = torch.ones_like(interact_prob).to(interact_prob)
+    # target[batch_size // 2:] = 0.
+    # loss_fn = torch.nn.BCEWithLogitsLoss()
+    # bce_loss = loss_fn(interact_prob, target)
+    bce_loss = (torch.sum(1-pos_scores) + torch.sum(neg_scores)) / (len(pos_index) + len(neg_index))
 
     
     # mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
@@ -90,8 +91,8 @@ def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, aut
     emb_loss = decay * regularizer / (len(authors) + len(papers))
     
     # pred_pos = torch.sum(score_matrix >= 0)
-    pos_samples = torch.sigmoid(pos_scores.detach()) >= 0.5
-    neg_samples = torch.sigmoid(neg_scores.detach()) >= 0.5
+    pos_samples = pos_scores >= 0.5
+    neg_samples = neg_scores >= 0.5
     true_pos = torch.sum(pos_samples)
     precision = torch.sum(pos_samples) / (torch.sum(pos_samples) + torch.sum(neg_samples))
     recall = true_pos / len(pos_index)
@@ -183,7 +184,8 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
 
 
 def train(model: General, optimizer, args):
-
+    train_writer = SummaryWriter(os.path.join(tensorbaord_dir, 'train'))
+    test_writer = SummaryWriter(os.path.join(tensorbaord_dir, 'test'))
     epoch = args.epoch
     begin_epoch = 1
     if os.path.exists(args.save_dir):
@@ -238,15 +240,15 @@ def train(model: General, optimizer, args):
                 t.update(1)
         print(f'Train Epoch {epoch_idx:.4f} Loss: {epoch_loss / n_train_batch:.4f} MF Loss: {epoch_bce_loss / n_train_batch:.4f} Emb Loss: {epoch_emb_loss / n_train_batch:.4f} Precision: {epoch_total_precision / n_train_batch:.4f} Recall: {epoch_total_recall / n_train_batch:.4f}')
         
-        writer.add_scalar('Train/total loss', epoch_loss / n_train_batch, epoch)
-        writer.add_scalar('Train/bce loss', epoch_bce_loss / n_train_batch, epoch)
-        writer.add_scalar('Train/embedding loss', epoch_emb_loss / n_train_batch, epoch)
+        train_writer.add_scalar('Train/total loss', epoch_loss / n_train_batch, epoch)
+        train_writer.add_scalar('Train/bce loss', epoch_bce_loss / n_train_batch, epoch)
+        train_writer.add_scalar('Train/embedding loss', epoch_emb_loss / n_train_batch, epoch)
         test_loss, test_bce_loss, test_total_precision, test_total_recall = test_one_epoch(model, args, epoch_idx)
         print(f'Test Epoch {epoch_idx:.4f} Loss: {test_loss:.4f} BCE Loss: {test_bce_loss:.4f} Precision: {test_total_precision:.4f} Recall: {test_total_recall:.4f}')
-        writer.add_scalar('Valid/total loss', test_loss, epoch)
-        writer.add_scalar('Valid/bce loss', test_bce_loss, epoch)
-        writer.add_scalar('Valid/precision', test_total_precision, epoch)
-        writer.add_scalar('Valid/recall', test_total_recall, epoch)
+        test_writer.add_scalar('Valid/total loss', test_loss, epoch)
+        test_writer.add_scalar('Valid/bce loss', test_bce_loss, epoch)
+        test_writer.add_scalar('Valid/precision', test_total_precision, epoch)
+        test_writer.add_scalar('Valid/recall', test_total_recall, epoch)
         save_checkpoint(model, args, test_total_recall, epoch_idx)
         print("*" * 100)
         # np.save(os.path.join(args.save_dir, 'interact_prob.npy'), interact_prob.detach().cpu().numpy())
