@@ -93,7 +93,7 @@ class General(nn.Module):
         paper_embedding_new = self.pa_GNN(paper_embedding, self.paper_adj)
         
         # TODO may add ngcf layer
-        
+        author_embedding_new, paper_embedding_new = self.NGCF(author_embedding_new, paper_embedding_new)
         
         batch_author_embedding = author_embedding_new[batch_author_index]
         batch_paper_embedding = paper_embedding_new[batch_paper_index]
