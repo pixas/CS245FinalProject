@@ -72,7 +72,9 @@ class General(nn.Module):
                 paper_embedding: Tensor,
                 paper_feature: Tensor,
                 batch_paper_index: List[int],
-                batch_author_index: List[int]=None):
+                batch_author_index: List[int]=None,
+                paper_paper_map=None,
+                paper_padding_mask=None):
         """update General model
         Args:
             author_embedding (Tensor): (N, d), where N is the number of authors
@@ -91,6 +93,23 @@ class General(nn.Module):
             
         author_embedding_new = self.au_GNN(author_embedding, self.author_adj)
         paper_embedding_new = self.pa_GNN(paper_embedding, self.paper_adj)
+        batch_author_embedding = author_embedding_new[batch_author_index]
+        # paper_embedding_new = paper_embedding
+
+        paper_list = paper_paper_map[batch_paper_index]
+        mask_list = paper_padding_mask[batch_paper_index]
+
+        B,K = paper_list.shape
+        paper_list = np.reshape(paper_list,(-1,1))
+        # paper_embedding_new = self.pa_GNN(paper_embedding, self.paper_adj)
+
+        paper_emb_list = paper_embedding[paper_list].reshape((B,K,-1))
+
+        paper_emb_list = paper_emb_list*mask_list.unsqueeze(-1)
+        
+        # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
+        batch_paper_query = paper_embedding[batch_paper_index].unsqueeze(1)
+        batch_gat_embedding = self.pa_GAT(batch_paper_query, paper_emb_list, mask_list)
         
         # TODO may add ngcf layer
         author_embedding_new, paper_embedding_new = self.NGCF(author_embedding_new, paper_embedding_new)
