@@ -58,7 +58,7 @@ class GAT(nn.Module):
         # key_padding_mask = torch.cat([torch.zeros((y.shape[0], 1), device=y.device), key_padding_mask], 1)
         for i, layer in enumerate(self.layers):
             
-            x = layer(x, y, y)
+            x = layer(x, y, y, key_padding_mask)
         
         return x[:, 0, :]
     
