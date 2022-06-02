@@ -106,7 +106,6 @@ class General(nn.Module):
 
         paper_emb_list = paper_emb_list*mask_list.unsqueeze(-1)
         
-        author_embedding_new = self.au_GNN(author_embedding,self.author_adj)
         # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
         batch_paper_query = paper_embedding[batch_paper_index].unsqueeze(1)
         batch_gat_embedding = self.pa_GAT(batch_paper_query, paper_emb_list, mask_list)

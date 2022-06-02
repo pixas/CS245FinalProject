@@ -15,7 +15,7 @@ class GATBlock(nn.Module):
             dropout=dropout, batch_first=True
         )
         
-        self.layer_norm = nn.LayerNorm(embed_dim)
+        # self.layer_norm = nn.LayerNorm(embed_dim)
         # self.linear1 = nn.Linear(embed_dim, embed_dim * 4)
         # self.linear2 = nn.Linear(embed_dim * 4, embed_dim)
         # self.out_norm = nn.LayerNorm(embed_dim)
@@ -28,14 +28,14 @@ class GATBlock(nn.Module):
     def forward(self, query: Tensor, key: Tensor, value: Tensor,
                 key_padding_mask: Tensor):
         # key_padding_mask = torch.all(x == 0, -1)
-        residual = query 
+        # residual = query 
         query, _ = self.attention(
             query=query,
             key=key,
             value=value if value is not None else key,
             key_padding_mask=key_padding_mask
         )
-        query = self.layer_norm(query + residual)
+        # query = self.layer_norm(query + residual)
         # residual = query
         # query = self.linear2(F.gelu(self.linear1(query)))
         # query = self.out_norm(query + residual)
@@ -53,12 +53,12 @@ class GAT(nn.Module):
         for i in range(stack_layers)])
     
     def forward(self, x: Tensor, y: Tensor, key_padding_mask: Tensor):
-        key_padding_mask = 1 - key_padding_mask
-        y = torch.cat([x,y], 1)
-        key_padding_mask = torch.cat([torch.zeros((y.shape[0], 1), device=y.device), key_padding_mask], 1)
+        # key_padding_mask = 1 - key_padding_mask
+        # y = torch.cat([x,y], 1)
+        # key_padding_mask = torch.cat([torch.zeros((y.shape[0], 1), device=y.device), key_padding_mask], 1)
         for i, layer in enumerate(self.layers):
             
-            x = layer(x, y, y, key_padding_mask)
+            x = layer(x, y, y)
         
         return x[:, 0, :]
     
