@@ -64,6 +64,7 @@ init_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=dev
 init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=device)
 paper_feature = data_generator.get_paper_embeddings()
 adj_matrix, lap_matrix = data_generator.get_bipartite_matrix()
+paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
 
 def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, authors, papers):
     # interact prob
@@ -158,7 +159,9 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
                 init_paper_embedding,
                 paper_feature,
                 test_papers,
-                test_authors
+                test_authors,
+                paper_paper_map,
+                paper_padding_mask
             )
 
             test_loss, test_bce_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
@@ -214,7 +217,9 @@ def train(model: General, optimizer, args):
                     init_paper_embedding,
                     paper_feature,
                     train_papers,
-                    train_authors
+                    train_authors,
+                    paper_paper_map,
+                    paper_padding_mask
                 )
                 
                 # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()

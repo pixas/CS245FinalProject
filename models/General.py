@@ -60,7 +60,8 @@ class General(nn.Module):
         self.author_adj = author_adj
         
         self.au_GNN = GNN(author_dim,author_dim,author_dim,Au_layers,Authordropout,True)
-        self.pa_GNN = GNN(paper_dim,paper_dim,paper_dim,Pa_layers,Paperdropout,True)
+        # self.pa_GNN = GNN(paper_dim,paper_dim,paper_dim,Pa_layers,Paperdropout,True)
+        self.pa_GAT = GAT(paper_dim, args.num_heads, Paperdropout, args.gat_layers)
         # self.pa_sage = GraphSage(embed_dim=paper_dim, stack_layers=Pa_layers, dropout=Paperdropout)
 
         self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
@@ -92,7 +93,7 @@ class General(nn.Module):
             paper_embedding = paper_feature
             
         author_embedding_new = self.au_GNN(author_embedding, self.author_adj)
-        paper_embedding_new = self.pa_GNN(paper_embedding, self.paper_adj)
+        # paper_embedding_new = self.pa_GNN(paper_embedding, self.paper_adj)
         batch_author_embedding = author_embedding_new[batch_author_index]
         # paper_embedding_new = paper_embedding
 
