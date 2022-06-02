@@ -21,6 +21,7 @@ class General(nn.Module):
                 num_layers: int, NGCFembed_dim: int, dropoutNGCF:float,
                 paper_dim: int, author_dim: int, layer_size_list: List[int],
                 args: ArgumentParser,
+                norm_adj: SparseTensor,
                 use_pretrain= False) -> None:
         """initializes General model
         Args:
@@ -59,22 +60,19 @@ class General(nn.Module):
         self.author_adj = author_adj
         
         self.au_GNN = GNN(author_dim,author_dim,author_dim,Au_layers,Authordropout,True)
-        # self.pa_GNN = GNN(paper_dim,paper_dim,paper_dim,Pa_layers,Paperdropout,True)
+        self.pa_GNN = GNN(paper_dim,paper_dim,paper_dim,Pa_layers,Paperdropout,True)
         # self.pa_sage = GraphSage(embed_dim=paper_dim, stack_layers=Pa_layers, dropout=Paperdropout)
-        self.pa_GAT = GAT(paper_dim, args.num_heads, Paperdropout, args.gat_layers)
-        # self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
-        #          num_layers, NGCFembed_dim, paper_dim, author_dim,
-        #          norm_adj, layer_size_list)
+
+        self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
+                 num_layers, NGCFembed_dim, paper_dim, author_dim,
+                 norm_adj, layer_size_list)
 
     
     def forward(self, author_embedding: Tensor,
                 paper_embedding: Tensor,
                 paper_feature: Tensor,
-                paper_neighbor_embedding: Tensor,
                 batch_paper_index: List[int],
-                batch_author_index: List[int]=None,
-                paper_paper_map: List[List[int]]=None,
-                paper_padding_mask: Tensor=None):
+                batch_author_index: List[int]=None):
         """update General model
         Args:
             author_embedding (Tensor): (N, d), where N is the number of authors
@@ -92,30 +90,12 @@ class General(nn.Module):
             paper_embedding = paper_feature
             
         author_embedding_new = self.au_GNN(author_embedding, self.author_adj)
-        batch_author_embedding = author_embedding_new[batch_author_index]
-        # paper_embedding_new = paper_embedding
-
-        paper_list = paper_paper_map[batch_paper_index]
-        mask_list = paper_padding_mask[batch_paper_index]
-
-        B,K = paper_list.shape
-        paper_list = np.reshape(paper_list,(-1,1))
-        # paper_embedding_new = self.pa_GNN(paper_embedding, self.paper_adj)
-
-        paper_emb_list = paper_embedding[paper_list].reshape((B,K,-1))
-
-        paper_emb_list = paper_emb_list*mask_list.unsqueeze(-1)
+        paper_embedding_new = self.pa_GNN(paper_embedding, self.paper_adj)
         
-        # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
-        batch_paper_query = paper_embedding[batch_paper_index].unsqueeze(1)
-        batch_gat_embedding = self.pa_GAT(batch_paper_query, paper_emb_list, mask_list)
-        # paper_embedding_sage = self.pa_sage(paper_emb_list)
-        # paper_embedding_new[test_papers] = paper_embedding_sage
-        # paper_embedding_new = paper_embedding.scatter(0, torch.tensor(batch_paper_index, 
-        #                                                             dtype=torch.int64, 
-        #                                                             device=author_embedding.device).unsqueeze(-1).repeat(1, paper_embedding.shape[-1]), batch_gat_embedding)
-        # paper_embedding_new = paper_embedding
-        # author_embedding_new, paper_embedding_new = self.NGCF(author_embedding, paper_embedding)
-        # interact_prob = torch.einsum("nd,md->nm", author_embedding_new, paper_embedding_new)
-        # interact_prob = torch.sigmoid(interact_prob)
-        return batch_author_embedding, batch_gat_embedding
+        # TODO may add ngcf layer
+        
+        
+        batch_author_embedding = author_embedding_new[batch_author_index]
+        batch_paper_embedding = paper_embedding_new[batch_paper_index]
+
+        return batch_author_embedding, batch_paper_embedding

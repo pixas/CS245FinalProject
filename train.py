@@ -32,7 +32,7 @@ def parse_args():
     parser.add_argument('--NGCF_layers', type=int, default=3, help='ngcf layers')
     parser.add_argument('--ngcf_dropout', type=float, default=0.3, help='ngcf dropout rate')
     parser.add_argument('--rw_length', type=int, default=512, help='random walk length')
-    parser.add_argument('--only_feature', action='store_true', default=False)
+    parser.add_argument('--only_feature', action='store_true', default=True)
     parser.add_argument('--layer_size_list', type=List[int], default=[512, 768, 1024], help='increase of receptive field')
     
     
@@ -63,7 +63,7 @@ data_generator = AcademicDataset(batch_size=args.batch_size, random_walk_length=
 init_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
 init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=device)
 paper_feature = data_generator.get_paper_embeddings()
-paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
+adj_matrix, lap_matrix = data_generator.get_bipartite_matrix()
 
 def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, authors, papers):
     # interact prob
@@ -152,16 +152,13 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
 
             test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
             # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
-            paper_neighbor_embedding= []
+
             author_embedding, paper_embedding = model(
                 init_author_embedding, 
                 init_paper_embedding,
                 paper_feature,
-                paper_neighbor_embedding,
                 test_papers,
-                test_authors,
-                paper_paper_map,
-                paper_padding_mask
+                test_authors
             )
 
             test_loss, test_bce_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
@@ -215,11 +212,8 @@ def train(model: General, optimizer, args):
                     init_author_embedding, 
                     init_paper_embedding,
                     paper_feature,
-                    [],
                     train_papers,
-                    train_authors,
-                    paper_paper_map,
-                    paper_padding_mask
+                    train_authors
                 )
                 
                 # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()
@@ -272,6 +266,7 @@ if __name__ == '__main__':
         author_dim=args.embed_dim,
         layer_size_list=args.layer_size_list,
         args=args,
+        norm_adj=adj_matrix,
         only_feature=args.only_feature
     )
     model.to(device)

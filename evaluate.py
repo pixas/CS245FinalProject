@@ -61,7 +61,7 @@ data_generator = AcademicDataset(batch_size=train_args.batch_size, random_walk_l
 init_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
 init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=device)
 paper_feature = data_generator.get_paper_embeddings()
-paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
+norm_adj, lap_adj = data_generator.get_bipartite_matrix()
 
 TRAIN_FILE_TXT = f'{train_args.datapath}/bipartite_train.txt'
 TEST_FILE_TXT = f'{train_args.datapath}/bipartite_test_ann.txt'
@@ -89,11 +89,8 @@ def evaluate_test_ann(model: General, test_file: str, output_dir: str):
             init_author_embedding,
             init_paper_embedding,
             paper_feature,
-            [],
             batch_test_papers,
             batch_test_authors,
-            paper_paper_map,
-            paper_padding_mask
         )
 
         final_author_embeddings.append(author_embedding)
@@ -139,6 +136,7 @@ if __name__ == '__main__':
         author_dim=train_args.embed_dim,
         layer_size_list=train_args.layer_size_list,
         only_feature=train_args.only_feature,
+        norm_adj=norm_adj,
         args=train_args
     )
     model.to(device)
