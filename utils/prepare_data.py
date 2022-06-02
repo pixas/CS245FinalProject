@@ -256,6 +256,7 @@ class PrepareData(object):
             degree_value[author] = len(papers)
             for paper in papers:
                 index.append([author, paper])
+                index.append([paper, author])
                 degree_value[paper] += 1
         # adjacency matrix
         v = [1] * len(index)
