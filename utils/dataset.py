@@ -46,7 +46,25 @@ class AcademicDataset(object):
         self.paper_mask_path = f'{path}/paper_mask.npy'
         self.bipartite_adj_path = f'{path}/bipartite_adj.pkl'
         self.bipartite_lap_path = f'{path}/bipartite_lap.pkl'
+        self.bipartite_test_ann_path = f'{path}/bipartite_test_ann.txt'
 
+        self.author_paper_map_path = f'{path}/author_paper_map.pkl'
+        self.train_idx_path = f'{path}/train_idx.pkl'
+        self.train_authors_path = f'{path}/train_authors.pkl'
+        self.train_papers_path = f'{path}/train_papers.pkl'
+        
+        # data path end #
+        self.sample_number = sample_number
+        self.author_paper_map = self.get_author_paper_map()
+        self._paper_paper_map, self._paper_padding_mask = self.get_paper_paper_map()
+        self._author_author_map = self.get_author_author_map()
+        self.forbidden_test_ann = np.loadtxt(self.bipartite_test_ann_path, int, delimiter=' ')
+        self.forbidden_pair: Dict[int, set] = {}
+        for i, j in self.forbidden_test_ann:
+            if i not in self.forbidden_pair:
+                self.forbidden_pair[i] = set([j])
+            else:
+                self.forbidden_pair[i].add(j)
         self.author_paper_map_path = f'{path}/author_paper_map.pkl'
         self.train_idx_path = f'{path}/train_idx.pkl'
         self.train_authors_path = f'{path}/train_authors.pkl'
