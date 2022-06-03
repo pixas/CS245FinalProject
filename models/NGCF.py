@@ -95,4 +95,25 @@ class NGCF(nn.Module):
         return author_embedding_new, paper_embedding_new
             
         
+class LightGCN(nn.Module):
+    def __init__(self, n_authors: int, n_papers: int, dropout: float, 
+                 num_layers: int, norm_adj: SparseTensor) -> None:
+        super(LightGCN, self).__init__()
+        self.n_authors = n_authors
+        self.n_papers = n_papers
+
+        self.num_layers = num_layers
+        self.norm_adj = norm_adj
+    
+    def forward(self, author_embedding: Tensor, 
+                paper_embedding: Tensor):
+        ego_embedding = torch.cat([author_embedding, paper_embedding], 0)
+        embedding_list = [ego_embedding]
         
+        for i in range(self.num_layers):
+            grouped_embedding = self.norm_adj @ embedding_list[-1]
+            embedding_list.append(grouped_embedding)
+        
+        output_embedding = torch.cat(embedding_list, 0).mean(0)
+        output_author_embedding, output_paper_embedding = torch.split(output_embedding, [self.n_authors, self.n_papers], 0)
+        return ego_embedding, output_author_embedding, output_paper_embedding

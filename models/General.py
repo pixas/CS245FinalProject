@@ -7,7 +7,7 @@ from torch import Tensor
 from argparse import ArgumentParser
 from torch_sparse import SparseTensor
 from models.GraphAggregate import GAT, GraphSage
-from models.NGCF import NGCF
+from models.NGCF import NGCF, LightGCN
 from models.random_walk import RandomWalk
 from models.GCN import GNN
 import numpy as np
@@ -63,6 +63,7 @@ class General(nn.Module):
         # self.pa_GNN = GNN(paper_dim,paper_dim,paper_dim,Pa_layers,Paperdropout,True)
         # self.pa_sage = GraphSage(embed_dim=paper_dim, stack_layers=Pa_layers, dropout=Paperdropout)
         self.pa_GAT = GAT(paper_dim, args.num_heads, Paperdropout, args.gat_layers)
+        self.light_gcn = LightGCN(n_authors, n_papers, dropoutNGCF, num_layers, norm_adj)
         self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
                  num_layers, NGCFembed_dim, paper_dim, author_dim,
                  norm_adj, layer_size_list)
