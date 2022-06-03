@@ -112,8 +112,9 @@ class LightGCN(nn.Module):
         
         for i in range(self.num_layers):
             grouped_embedding = self.norm_adj @ embedding_list[-1]
-            embedding_list.append(grouped_embedding)
+            embedding_list.append(grouped_embedding.unsqueeze(0))
         
         output_embedding = torch.cat(embedding_list, 0).mean(0)
         output_author_embedding, output_paper_embedding = torch.split(output_embedding, [self.n_authors, self.n_papers], 0)
         return ego_embedding, output_author_embedding, output_paper_embedding
+
