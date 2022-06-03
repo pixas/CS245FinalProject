@@ -117,9 +117,9 @@ class General(nn.Module):
                                                                     device=author_embedding.device).unsqueeze(-1).repeat(1, paper_embedding.shape[-1]), batch_gat_embedding)
         
         # paper_embedding_new = paper_embedding
-        author_embedding_new, paper_embedding_new = self.NGCF(author_embedding_new, paper_embedding_new)
+        regularizer, author_embedding_new, paper_embedding_new = self.light_gcn(author_embedding_new, paper_embedding_new)
         batch_author_embedding = author_embedding_new[batch_author_index]
         batch_paper_embedding = paper_embedding_new[batch_paper_index]
         # interact_prob = torch.einsum("nd,md->nm", author_embedding_new, paper_embedding_new)
         # interact_prob = torch.sigmoid(interact_prob)
-        return batch_author_embedding, batch_paper_embedding
+        return batch_author_embedding, batch_paper_embedding, regularizer

@@ -66,7 +66,7 @@ paper_feature = data_generator.get_paper_embeddings()
 paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
 adj_matrix, lap_matrix = data_generator.get_bipartite_matrix()
 
-def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, authors, papers):
+def get_loss(author_embedding, paper_embedding, regularizer, decay, pos_index, neg_index, authors, papers):
     # interact prob
     interact_prob = (author_embedding * paper_embedding).sum(-1)  # (B, )
     interact_prob = torch.sigmoid(interact_prob)
@@ -78,17 +78,17 @@ def get_loss(author_embedding, paper_embedding, decay, pos_index, neg_index, aut
 
     pos_scores = interact_prob[:batch_size // 2]
     neg_scores = interact_prob[batch_size // 2:]
-    # target = torch.ones_like(interact_prob).to(interact_prob)
-    # target[batch_size // 2:] = 0.
-    # loss_fn = torch.nn.BCEWithLogitsLoss()
-    # bce_loss = loss_fn(interact_prob, target)
-    bce_loss = (torch.sum(1-pos_scores) + torch.sum(neg_scores)) / (len(pos_index) + len(neg_index))
+    target = torch.ones_like(interact_prob).to(interact_prob)
+    target[batch_size // 2:] = 0.
+    loss_fn = torch.nn.BCELoss()
+    bce_loss = loss_fn(interact_prob, target)
+    # bce_loss = (torch.sum(1-pos_scores) + torch.sum(neg_scores)) / (len(pos_index) + len(neg_index))
 
     
     # mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
-
-    regularizer = (torch.norm(author_embedding) ** 2 + torch.norm(paper_embedding) ** 2) / 2
-    emb_loss = decay * regularizer / (len(authors) + len(papers))
+    emb_loss = decay * torch.norm(regularizer, 2, dim=-1) ** 2 / (len(authors) + len(papers))
+    # regularizer = (torch.norm(author_embedding) ** 2 + torch.norm(paper_embedding) ** 2) / 2
+    # emb_loss = decay * regularizer / (len(authors) + len(papers))
     
     # pred_pos = torch.sum(score_matrix >= 0)
     pos_samples = pos_scores >= 0.5
@@ -154,7 +154,7 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
             test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
             # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
             paper_neighbor_embedding= []
-            author_embedding, paper_embedding = model(
+            regularizer, author_embedding, paper_embedding = model(
                 init_author_embedding, 
                 init_paper_embedding,
                 paper_feature,
@@ -165,7 +165,7 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
                 paper_padding_mask
             )
 
-            test_loss, test_bce_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
+            test_loss, test_bce_loss, test_emb_loss, test_precision, test_recall = get_loss(author_embedding, paper_embedding, regularizer, args.decay, test_pos_index, test_neg_index, test_authors, test_papers)
             
             epoch_loss += test_loss
             epoch_bce_loss += test_bce_loss
@@ -213,7 +213,7 @@ def train(model: General, optimizer, args):
 
                 train_pos_index, train_neg_index, train_authors, train_papers = data_generator.sample_train()
                 # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, train_papers)
-                author_embedding, paper_embedding = model(
+                regularizer, author_embedding, paper_embedding = model(
                     init_author_embedding, 
                     init_paper_embedding,
                     paper_feature,
@@ -225,7 +225,7 @@ def train(model: General, optimizer, args):
                 )
                 
                 # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()
-                loss, bce_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, args.decay, train_pos_index, train_neg_index, train_authors, train_papers)
+                loss, bce_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, regularizer, args.decay, train_pos_index, train_neg_index, train_authors, train_papers)
                 
                 optimizer.zero_grad()
                 loss.backward()
