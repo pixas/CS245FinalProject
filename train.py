@@ -86,7 +86,7 @@ def get_loss(author_embedding, paper_embedding, regularizer, decay, pos_index, n
 
     
     # mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
-    emb_loss = decay * torch.norm(regularizer, 2, dim=-1) ** 2 / (len(authors) + len(papers))
+    emb_loss = decay * torch.sum(torch.norm(regularizer, 2, dim=-1) ** 2) / (len(authors) + len(papers))
     # regularizer = (torch.norm(author_embedding) ** 2 + torch.norm(paper_embedding) ** 2) / 2
     # emb_loss = decay * regularizer / (len(authors) + len(papers))
     
