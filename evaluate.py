@@ -20,35 +20,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def get_loss(author_embedding, paper_embedding, interact_prob, decay, pos_index, neg_index, authors, papers):
-    author_embeddings = author_embedding[authors]
-    paper_embeddings = paper_embedding[papers]
-    author_embedding = F.normalize(author_embedding, p=2, dim=1)
-    paper_embedding = F.normalize(paper_embedding, p=2, dim=1)
-    # score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
-    
-    fetch_pos_index = list(zip(*pos_index))
-    fetch_neg_index = list(zip(*neg_index))
-    pos_scores = interact_prob[fetch_pos_index[0], fetch_pos_index[1]]
-    neg_scores = interact_prob[fetch_neg_index[0], fetch_neg_index[1]]
 
-    mf_loss = (torch.sum(1-pos_scores) + torch.sum(neg_scores)) / (len(pos_index) + len(neg_index))
-    # mf_loss = F.nll_loss(pos_scores, torch.ones((pos_scores.shape[0]), device=interact_prob.device)) + \
-    #     F.nll_loss(neg_scores, torch.zeros((pos_scores.shape[0]), device=interact_prob.device))
-    
-    # mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
-
-    regularizer = (torch.norm(author_embeddings) ** 2 + torch.norm(paper_embeddings) ** 2) / 2
-    emb_loss = decay * regularizer / (len(authors) + len(papers))
-    
-    # pred_pos = torch.sum(score_matrix >= 0)
-    pos_samples = pos_scores >= 0.5
-    neg_samples = neg_scores >= 0.5
-    true_pos = torch.sum(pos_samples)
-    precision = torch.sum(pos_samples) / (torch.sum(pos_samples) + torch.sum(neg_samples))
-    recall = true_pos / len(pos_index)
-
-    return mf_loss + emb_loss, mf_loss, emb_loss, precision, recall
 
 args = parse_args()
 print(args)
@@ -62,7 +34,7 @@ init_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=dev
 init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=device)
 paper_feature = data_generator.get_paper_embeddings()
 paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
-
+adj_matrix, lap_matrix = data_generator.get_bipartite_matrix()
 TRAIN_FILE_TXT = f'{train_args.datapath}/bipartite_train.txt'
 TEST_FILE_TXT = f'{train_args.datapath}/bipartite_test_ann.txt'
 
@@ -139,7 +111,8 @@ if __name__ == '__main__':
         author_dim=train_args.embed_dim,
         layer_size_list=train_args.layer_size_list,
         only_feature=train_args.only_feature,
-        args=train_args
+        args=train_args,
+        norm_adj=lap_matrix
     )
     model.to(device)
     model.load_state_dict(model_parameter['model_state'])
