@@ -221,7 +221,7 @@ class PrepareData(object):
         for paper in range(self.paper_cnt):
             degree_value[self.author_cnt + paper] = len(paper_paper_map[paper])
             for cited_paper in paper_paper_map[paper]:
-                index.append([paper + self.paper_cnt, cited_paper + self.paper_cnt])
+                index.append([paper + self.author_cnt, cited_paper + self.author_cnt])
         for author, papers in self.author_paper_map.items():
             degree_value[author] += len(papers)
             
