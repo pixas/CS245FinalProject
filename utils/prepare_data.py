@@ -1,3 +1,4 @@
+from re import L
 import sys
 import numpy as np
 import pickle
@@ -69,23 +70,19 @@ class PrepareData(object):
             author 1 has coauthored with author 10 and author 11
             return {1: {10, 11}, 10: {1}, 11: {1}}
         """
-        try:
-            t1 = time.time()
-            with open(self.author_author_map_path, 'rb') as f:
-                author_author_map = pickle.load(f)
-            print(f'Load author-author map from {self.author_author_map_path}, time cost: {time.time() - t1: .3f}s')
-        except:
-            t1 = time.time()
-            with open(self.author_graph_path, 'r') as f:
-                lines = f.readlines()
-                author_author_map = {author: set() for author in range(self.author_cnt)}
-                for line in lines:
-                    for author, coauthor in [line.strip().split(' ')]:
-                        author_author_map[int(author)].add(int(coauthor))
-                        author_author_map[int(coauthor)].add(int(author))
-            print(f'Build author-author map, time cost: {time.time() - t1: .3f}s')
-            with open(self.author_author_map_path, 'wb') as f:
-                pickle.dump(author_author_map, f)
+
+        t1 = time.time()
+        with open(self.author_graph_path, 'r') as f:
+            lines = f.readlines()
+            author_author_map = [list() for author in range(self.author_cnt)]
+            for line in lines:
+                for author, coauthor in [line.strip().split(' ')]:
+                    author_author_map[int(author)].append(int(coauthor))
+                    author_author_map[int(coauthor)].append(int(author))
+        print(f'Build author-author map, time cost: {time.time() - t1: .3f}s')
+        self.author_author_map = author_author_map
+        with open(self.author_author_map_path, 'wb') as f:
+            pickle.dump(author_author_map, f)
         return author_author_map
 
     def get_author_adj_matrix(self) -> SparseTensor:
@@ -95,52 +92,20 @@ class PrepareData(object):
         """
 
         t1 = time.time()
-        with open(self.author_graph_path, 'r') as f:
-            lines = f.readlines()
-            author_author_map = {author: set() for author in range(self.author_cnt)}
-            for line in lines:
-                for author, coauthor in [line.strip().split(' ')]:
-                    author_author_map[int(author)].add(int(coauthor))
-                    author_author_map[int(coauthor)].add(int(author))
-            index = []
-            for author, coauthors in author_author_map.items():
-                for coauthor in coauthors:
-                    index.append((author, coauthor))
-            v = [1] * len(index)
-            author_adj_matrix = torch.sparse_coo_tensor(list(zip(*index)), v, (self.n_authors, self.n_authors))
+        author_author_map = self.author_author_map
+        index = []
+        for author, coauthors in author_author_map.items():
+            for coauthor in coauthors:
+                index.append((author, coauthor))
+        v = [1] * len(index)
+        author_adj_matrix = torch.sparse_coo_tensor(list(zip(*index)), v, (self.n_authors, self.n_authors))
         print(f'Build author adjacency matrix, time cost: {time.time() - t1: .3f}s')
         with open(self.author_adj_path, 'wb') as f:
             pickle.dump(author_adj_matrix, f)
 
         return author_adj_matrix
 
-    # def get_paper_paper_nei(self):
 
-    #     t1 = time.time()
-        
-    #     paper_feature = self.paper_embeddings
-    #     paper_paper_map = self.paper_paper_map
-
-    #     # max_connection = max(len(list(x)) for i, x in paper_paper_map.items())
-    #     sample_number = 64
-
-    #     neighbor_embedding = torch.zeros((self.paper_cnt, sample_number + 1, paper_feature.shape[-1]), dtype=paper_feature.dtype)
-    #     for i, x in paper_paper_map.items():
-    #         possible_idx = list(x)
-    #         random.shuffle(possible_idx)
-    #         idx = torch.tensor(possible_idx if len(possible_idx) <= sample_number else possible_idx[:sample_number], dtype=torch.int64)
-
-    #         gather_idx = idx.unsqueeze(-1).repeat((1, paper_feature.shape[-1]))
-
-    #         gathered_embedding = paper_feature.gather(0, gather_idx)
-    #         neighbor_embedding[i] = neighbor_embedding[i].scatter(0, torch.arange(1, len(idx) + 1, 1, dtype=torch.int64).unsqueeze(-1).repeat((1, paper_feature.shape[-1])), gathered_embedding)
-    #         neighbor_embedding[i, 0] = paper_feature[i]
-
-    #     print(f'Build paper paper neighborhood, time cost: {time.time() - t1:.3f}')
-    #     torch.save(neighbor_embedding, self.paper_paper_nei_path)
-    #         # with open(self.paper_paper_nei_path, 'wb') as f:
-    #         #     pickle.dump(neighbor_embedding, f)
-        
 
                 
     
@@ -173,6 +138,7 @@ class PrepareData(object):
             paper_paper_map = np.array(paper_paper_map)
                     
         print(f'Build paper-paper map, time cost: {time.time() - t1: .3f}s')
+        self.paper_paper_map = paper_paper_map
         np.save(self.paper_mask, padding_mask)
         with open(self.paper_paper_map_path, 'wb') as f:
             pickle.dump(paper_paper_map, f)
@@ -185,19 +151,14 @@ class PrepareData(object):
         """
 
         t1 = time.time()
-        with open(self.paper_graph_path, 'r') as f:
-            lines = f.readlines()
-            paper_paper_map = {paper: set() for paper in range(self.paper_cnt)}
-            for line in lines:
-                for paper, cited_paper in [line.strip().split(' ')]:
-                    paper_paper_map[int(paper)].add(int(cited_paper))
-                    paper_paper_map[int(cited_paper)].add(int(paper))
-            index = []
-            for paper, cited_papers in paper_paper_map.items():
-                for cited_paper in cited_papers:
-                    index.append((paper, cited_paper))
-            v = [1] * len(index)
-            paper_adj_matrix = torch.sparse_coo_tensor(list(zip(*index)), v, (self.n_papers, self.n_papers))
+        paper_paper_map = self.paper_paper_map
+
+        index = []
+        for paper, cited_papers in paper_paper_map.items():
+            for cited_paper in cited_papers:
+                index.append((paper, cited_paper))
+        v = [1] * len(index)
+        paper_adj_matrix = torch.sparse_coo_tensor(list(zip(*index)), v, (self.n_papers, self.n_papers))
         print(f'Build paper adjacency matrix, time cost: {time.time() - t1: .3f}s')
         with open(self.paper_adj_path, 'wb') as f:
             pickle.dump(paper_adj_matrix, f)
@@ -247,13 +208,23 @@ class PrepareData(object):
         """
         bipartite_adj_matrix = []
         bipartite_lap_index = []
-
+        author_author_map = self.author_author_map
+        paper_paper_map = self.paper_paper_map
         t1 = time.time()
         assert self.author_paper_map != None
         degree_value = [0] * (self.author_cnt + self.paper_cnt)
         index = []
+        for author in range(self.author_cnt):
+            degree_value[author] = len(author_author_map[author])
+            for coauthor in author_author_map[author]:
+                index.append([author, coauthor])
+        for paper in range(self.paper_cnt):
+            degree_value[self.author_cnt + paper] = len(paper_paper_map[paper])
+            for cited_paper in paper_paper_map[paper]:
+                index.append([paper + self.paper_cnt, cited_paper + self.paper_cnt])
         for author, papers in self.author_paper_map.items():
-            degree_value[author] = len(papers)
+            degree_value[author] += len(papers)
+            
             for paper in papers:
                 index.append([author, paper])
                 index.append([paper, author])
@@ -300,10 +271,10 @@ class PrepareData(object):
 
 
     def prepare_all(self):
-        self.get_author_adj_matrix()
         self.get_author_author_map()
-        self.get_paper_adj_matrix()
+        self.get_author_adj_matrix()
         self.get_paper_paper_map()
+        self.get_paper_adj_matrix()
         # self.paper_embeddings = self.get_paper_embeddings()
         self.get_author_paper_map()
         self.get_bipartite_matrix()
