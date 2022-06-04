@@ -94,7 +94,7 @@ class PrepareData(object):
         t1 = time.time()
         author_author_map = self.author_author_map
         index = []
-        for author, coauthors in author_author_map.items():
+        for author, coauthors in enumerate(author_author_map):
             for coauthor in coauthors:
                 index.append((author, coauthor))
         v = [1] * len(index)
@@ -154,7 +154,7 @@ class PrepareData(object):
         paper_paper_map = self.paper_paper_map
 
         index = []
-        for paper, cited_papers in paper_paper_map.items():
+        for paper, cited_papers in enumerate(paper_paper_map):
             for cited_paper in cited_papers:
                 index.append((paper, cited_paper))
         v = [1] * len(index)
