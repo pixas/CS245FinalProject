@@ -15,6 +15,7 @@ from typing import List
 def parse_args():
     parser = argparse.ArgumentParser(description="Run General")
     parser.add_argument("path", type=str, default='checkpoints', help='checkpoint to reuse for evaluation')
+    parser.add_argument('--output_name', type=str, default='test_table')
     parser.add_argument('--output_dir', type=str, default='data', help='directory to save output csv files')
 
     return parser.parse_args()
@@ -37,11 +38,11 @@ paper_paper_map, paper_padding_mask = data_generator.get_paper_paper_map()
 adj_matrix, lap_matrix = data_generator.get_bipartite_matrix()
 TRAIN_FILE_TXT = f'{train_args.datapath}/bipartite_train.txt'
 TEST_FILE_TXT = f'{train_args.datapath}/bipartite_test_ann.txt'
-
+output_file_name = args.output_name
 
 @torch.no_grad()
 def evaluate_test_ann(model: General, test_file: str, output_dir: str):
-    output_file_name = "13_ShuyangJiang.csv"
+    
     test_array: list = np.loadtxt(test_file, dtype=int, delimiter=' ')
     model.eval()
     # author_embedding = pretrained_author_embedding
