@@ -71,11 +71,7 @@ class NGCF(nn.Module):
         all_embeddings = [ego_embeddings]
         
         for k in range(self.num_layers):
-            # temp_embed = []
-            # for f in range(self.n_fold):
-            #     temp_embed.append(A_fold_hat[f] @ ego_embeddings)
-            
-            # side_embeddings = torch.cat(temp_embed, 0)
+
             side_embeddings = self.norm_adj @ ego_embeddings
             sum_embeddings = self.relu1[k](self.weights_1[k](side_embeddings))
             

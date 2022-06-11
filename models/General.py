@@ -18,10 +18,11 @@ class General(nn.Module):
                 Paperdropout:float,Authordropout:float,
                 n_authors: int, n_papers: int, 
                 only_feature: bool,
-                num_layers: int, NGCFembed_dim: int, dropoutNGCF:float,
+                num_layers: int, lightgcn_dropout:float,
                 paper_dim: int, author_dim: int, layer_size_list: List[int],
                 args: ArgumentParser,
                 norm_adj: SparseTensor,
+                use_lightgcn=False,
                 use_pretrain= False) -> None:
         """initializes General model
         Args:
@@ -63,16 +64,15 @@ class General(nn.Module):
         # self.pa_GNN = GNN(paper_dim,paper_dim,paper_dim,Pa_layers,Paperdropout,True)
         # self.pa_sage = GraphSage(embed_dim=paper_dim, stack_layers=Pa_layers, dropout=Paperdropout)
         self.pa_GAT = GAT(paper_dim, args.num_heads, Paperdropout, args.gat_layers)
-        self.light_gcn = LightGCN(n_authors, n_papers, dropoutNGCF, num_layers, norm_adj)
-        self.NGCF = NGCF(n_authors, n_papers, dropoutNGCF, 
-                 num_layers, NGCFembed_dim, paper_dim, author_dim,
-                 norm_adj, layer_size_list)
+        self.use_lightgcn = use_lightgcn
+        if use_lightgcn:
+            self.light_gcn = LightGCN(n_authors, n_papers, lightgcn_dropout, num_layers, norm_adj)
+
 
     
     def forward(self, author_embedding: Tensor,
                 paper_embedding: Tensor,
                 paper_feature: Tensor,
-                paper_neighbor_embedding: Tensor,
                 batch_paper_index: List[int],
                 batch_author_index: List[int]=None,
                 paper_paper_map: List[List[int]]=None,
@@ -107,19 +107,22 @@ class General(nn.Module):
 
         paper_emb_list = paper_emb_list*mask_list.unsqueeze(-1)
         
-        # paper_embedding_new = self.pa_GNN(paper_embedding,self.paper_adj)
+
         batch_paper_query = paper_embedding[batch_paper_index].unsqueeze(1)
         batch_gat_embedding = self.pa_GAT(batch_paper_query, paper_emb_list, mask_list)
-        # paper_embedding_sage = self.pa_sage(paper_emb_list)
-        # paper_embedding_new[test_papers] = paper_embedding_sage
+
         paper_embedding_new = paper_embedding.scatter(0, torch.tensor(batch_paper_index, 
                                                                     dtype=torch.int64, 
                                                                     device=author_embedding.device).unsqueeze(-1).repeat(1, paper_embedding.shape[-1]), batch_gat_embedding)
-        
-        # paper_embedding_new = paper_embedding
-        regularizer, author_embedding_new, paper_embedding_new = self.light_gcn(author_embedding_new, paper_embedding_new)
+        regularizer = None
+        if self.use_lightgcn:
+            
+            # paper_embedding_new = paper_embedding
+            regularizer, author_embedding_new, paper_embedding_new = self.light_gcn(author_embedding_new, paper_embedding_new)
         batch_author_embedding = author_embedding_new[batch_author_index]
         batch_paper_embedding = paper_embedding_new[batch_paper_index]
+
+            
         # interact_prob = torch.einsum("nd,md->nm", author_embedding_new, paper_embedding_new)
         # interact_prob = torch.sigmoid(interact_prob)
         return batch_author_embedding, batch_paper_embedding, regularizer

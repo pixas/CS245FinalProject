@@ -1,16 +1,15 @@
 import argparse
 import os
-from typing import List
-from models.General import General
-import time
-import torch
-import torch.nn.functional as F 
-import torch.optim as optim
-import numpy as np
-from tqdm import tqdm
-from utils.dataset import AcademicDataset
 from functools import cmp_to_key
-from torch.utils.tensorboard import SummaryWriter  
+from typing import List
+
+import torch
+import torch.optim as optim
+from torch.utils.tensorboard import SummaryWriter
+from tqdm import tqdm
+
+from models.General import General
+from utils.dataset import AcademicDataset
 
 TRAIN_FILE_TXT = 'data/bipartite_train.txt'
 def parse_args():
@@ -29,9 +28,10 @@ def parse_args():
     parser.add_argument('--embed_dim', type=int, default=512, help='embedding dimension')
     parser.add_argument('--rw_stack_layers', type=int, default=2, help='random walk module stack layers')
     parser.add_argument('--rw_dropout', type=float, default=0.3, help='random walk dropout rate')
-    parser.add_argument('--NGCF_layers', type=int, default=3, help='ngcf layers')
-    parser.add_argument('--ngcf_dropout', type=float, default=0.3, help='ngcf dropout rate')
-    parser.add_argument('--rw_length', type=int, default=512, help='random walk length')
+    parser.add_argument('--lightgcn_layers', type=int, default=3, help='lightgcn layers')
+    parser.add_argument('--lightgcn_dropout', type=float, default=0.3, help='lightgcn dropout rate')
+    parser.add_argument('--use_lightgcn', default=True)
+
     parser.add_argument('--only_feature', action='store_true', default=False)
     parser.add_argument('--layer_size_list', type=List[int], default=[512, 768, 1024], help='increase of receptive field')
     
@@ -59,7 +59,7 @@ device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 tensorbaord_dir = os.path.join(args.log_dir, args.exp_name)
 
 data_generator = AcademicDataset(batch_size=args.batch_size, random_walk_length=args.rw_length, device=device, path=args.datapath)
-# pretrained_author_embedding = data_generator.author_embeddings
+
 init_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
 init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=device)
 paper_feature = data_generator.get_paper_embeddings()
@@ -73,7 +73,7 @@ def get_loss(author_embedding, paper_embedding, regularizer, decay, pos_index, n
     batch_size = interact_prob.shape[0]
 
     assert len(pos_index) + len(neg_index) == batch_size
-    # score_matrix = torch.matmul(author_embedding, paper_embedding.transpose(0, 1))
+
     
 
     pos_scores = interact_prob[:batch_size // 2]
@@ -82,15 +82,12 @@ def get_loss(author_embedding, paper_embedding, regularizer, decay, pos_index, n
     target[batch_size // 2:] = 0.
     loss_fn = torch.nn.BCELoss()
     bce_loss = loss_fn(interact_prob, target)
-    # bce_loss = (torch.sum(1-pos_scores) + torch.sum(neg_scores)) / (len(pos_index) + len(neg_index))
 
-    
-    # mf_loss = torch.sum(1 - pos_scores + neg_scores) / (len(pos_index) + len(neg_index))
-    emb_loss = decay * torch.sum(torch.norm(regularizer, 2, dim=-1) ** 2) / (len(authors) + len(papers))
-    # regularizer = (torch.norm(author_embedding) ** 2 + torch.norm(paper_embedding) ** 2) / 2
-    # emb_loss = decay * regularizer / (len(authors) + len(papers))
-    
-    # pred_pos = torch.sum(score_matrix >= 0)
+    if regularizer is not None:
+        emb_loss = decay * torch.sum(torch.norm(regularizer, 2, dim=-1) ** 2) / (len(authors) + len(papers))
+    else:
+        emb_loss = 0
+
     pos_samples = pos_scores >= 0.5
     neg_samples = neg_scores >= 0.5
     true_pos = torch.sum(pos_samples)
@@ -144,7 +141,7 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
     n_test_batch = len(data_generator.real_test_index) // (data_generator.batch_size // 2) + 1
     model.eval()
 
-    # paper_embedding = pretrained_paper_embedding
+
     with tqdm(total=n_test_batch) as t:
         t.set_description(f"Test Epoch {epoch_idx}")
         epoch_loss, epoch_bce_loss, epoch_emb_loss = 0, 0, 0
@@ -152,13 +149,12 @@ def test_one_epoch(model: General, args: argparse.ArgumentParser, epoch_idx: int
         for batch_idx in range(1, n_test_batch + 1):
 
             test_pos_index, test_neg_index, test_authors, test_papers = data_generator.sample_test()
-            # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, test_papers)
-            paper_neighbor_embedding= []
+
+
             author_embedding, paper_embedding, regularizer = model(
                 init_author_embedding, 
                 init_paper_embedding,
                 paper_feature,
-                paper_neighbor_embedding,
                 test_papers,
                 test_authors,
                 paper_paper_map,
@@ -198,7 +194,6 @@ def train(model: General, optimizer, args):
     else:
         begin_epoch = 1
 
-    # paper_embedding = pretrained_paper_embedding
     
     for epoch_idx in range(begin_epoch, epoch + 1):
         n_train_batch = len(data_generator.real_train_index) // (data_generator.batch_size // 2) + 1
@@ -209,22 +204,21 @@ def train(model: General, optimizer, args):
             epoch_total_precision, epoch_total_recall = 0, 0
 
             for batch_idx in range(1, n_train_batch + 1):
-                # author_path, paper_path = data_generator.sample()
+
 
                 train_pos_index, train_neg_index, train_authors, train_papers = data_generator.sample_train()
-                # paper_neighbor_embedding = data_generator.get_batch_paper_neighbor(pretrained_paper_embedding, train_papers)
+
                 author_embedding, paper_embedding, regularizer = model(
                     init_author_embedding, 
                     init_paper_embedding,
                     paper_feature,
-                    [],
                     train_papers,
                     train_authors,
                     paper_paper_map,
                     paper_padding_mask
                 )
                 
-                # train_pos_index, train_neg_index, test_pos_index, test_neg_index, train_authors, train_papers, test_authors, test_papers = data_generator.get_train_test_indexes()
+
                 loss, bce_loss, emb_loss, precision, recall = get_loss(author_embedding, paper_embedding, regularizer, args.decay, train_pos_index, train_neg_index, train_authors, train_papers)
                 
                 optimizer.zero_grad()
@@ -267,13 +261,13 @@ if __name__ == '__main__':
         Authordropout=args.gnn_dropout,
         n_authors=data_generator.author_cnt,
         n_papers=data_generator.paper_cnt,
-        num_layers=args.NGCF_layers,
-        NGCFembed_dim=args.embed_dim,
-        dropoutNGCF=args.ngcf_dropout,
+        num_layers=args.lightgcn_layers,
+        lightgcn_dropout=args.lightgcn_dropout,
         paper_dim=args.embed_dim,
         author_dim=args.embed_dim,
         layer_size_list=args.layer_size_list,
         args=args,
+        use_lightgcn=args.use_lightgcn,
         only_feature=args.only_feature,
         norm_adj=lap_matrix
     )
