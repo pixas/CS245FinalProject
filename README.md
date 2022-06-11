@@ -36,6 +36,7 @@ First run the following command to generate averaged checkpoint. `CKPT_DIR` is `
 ```bash
 python3 utils/average_checkpoints.py --inputs $CKPT_DIR --num-epoch-checkpoints 5 --output $CKPT_DIR/ckpt_avg5.pt
 ```
+This script is referred from [fairseq](https://github.com/facebookresearch/fairseq).
 
 Then use the following command to generate the score table in the checkpoints directory:
 ```bash
