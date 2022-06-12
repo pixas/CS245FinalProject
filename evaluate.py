@@ -17,7 +17,9 @@ def parse_args():
     parser.add_argument("path", type=str, default='checkpoints', help='checkpoint to reuse for evaluation')
     parser.add_argument('--output_name', type=str, default='test_table')
     parser.add_argument('--output_dir', type=str, default='data', help='directory to save output csv files')
-
+    parser.add_argument('--lightgcn_layers', type=int, default=3, help='lightgcn layers')
+    parser.add_argument('--lightgcn_dropout', type=float, default=0.3, help='lightgcn dropout rate')
+    parser.add_argument('--use_lightgcn', default=True)
     return parser.parse_args()
 
 
