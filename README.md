@@ -8,7 +8,8 @@ The structure of our model is as follows:
 ![None]()
 
 ### Data Preparation
-Use the following command to generate preprocessed data. Assume `<datapath>` is where you store all preprocessed data.
+Use the following command to generate preprocessed data. Assume `<datapath>` is where you store all preprocessed data and 
+make sure that `data.zip` is unzipped to `<datapath>`.
 ```bash
 python utils/prepare_data.py <datapath>
 ```
