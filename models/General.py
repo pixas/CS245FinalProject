@@ -65,6 +65,9 @@ class General(nn.Module):
         # self.pa_sage = GraphSage(embed_dim=paper_dim, stack_layers=Pa_layers, dropout=Paperdropout)
         self.pa_GAT = GAT(paper_dim, args.num_heads, Paperdropout, args.gat_layers)
         self.use_lightgcn = use_lightgcn
+        self.NGCF = NGCF(n_authors, n_papers, lightgcn_dropout,
+                 num_layers, author_dim, paper_dim, author_dim,
+                 norm_adj, layer_size_list)
         if use_lightgcn:
             self.light_gcn = LightGCN(n_authors, n_papers, lightgcn_dropout, num_layers, norm_adj)
 
