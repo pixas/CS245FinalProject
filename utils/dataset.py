@@ -10,7 +10,6 @@ from typing import Dict, List, Set, Tuple
 
 class AcademicDataset(object):
     def __init__(self, batch_size: int, 
-                 random_walk_length: int, 
                  device: str, 
                  train_ratio: float = 0.9, 
                  path = 'path',
@@ -24,7 +23,6 @@ class AcademicDataset(object):
             path: The path to the data.
         """
         self.batch_size = batch_size
-        self.random_walk_length = random_walk_length
         self.device = device
 
         # data path begin #

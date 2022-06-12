@@ -58,7 +58,7 @@ args = parse_args()
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 tensorbaord_dir = os.path.join(args.log_dir, args.exp_name)
 
-data_generator = AcademicDataset(batch_size=args.batch_size, random_walk_length=args.rw_length, device=device, path=args.datapath)
+data_generator = AcademicDataset(batch_size=args.batch_size, device=device, path=args.datapath)
 
 init_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
 init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=device)

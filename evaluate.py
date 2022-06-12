@@ -29,7 +29,7 @@ model_parameter = torch.load(args.path)
 train_args = model_parameter['args']
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-data_generator = AcademicDataset(batch_size=train_args.batch_size, random_walk_length=train_args.rw_length,device=device, path=train_args.datapath)
+data_generator = AcademicDataset(batch_size=train_args.batch_size,device=device, path=train_args.datapath)
 # pretrained_author_embedding = data_generator.author_embeddings
 init_author_embedding = torch.arange(0, data_generator.author_cnt, 1, device=device)
 init_paper_embedding = torch.arange(0, data_generator.paper_cnt, 1, device=device)
@@ -110,7 +110,7 @@ if __name__ == '__main__':
         author_dim=train_args.embed_dim,
         layer_size_list=train_args.layer_size_list,
         only_feature=train_args.only_feature,
-        use_lightgcn=train_args.use_lightgcn,
+        use_lightgcn=train_args.use_lightgcn if train_args.use_lightgcn else True,
         args=train_args,
         norm_adj=lap_matrix
     )
