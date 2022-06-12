@@ -106,13 +106,13 @@ if __name__ == '__main__':
         Authordropout=train_args.gnn_dropout,
         n_authors=data_generator.author_cnt,
         n_papers=data_generator.paper_cnt,
-        num_layers=train_args.lightgcn_layers,
-        lightgcn_dropout=train_args.lightgcn_dropout,
+        num_layers=args.lightgcn_layers,
+        lightgcn_dropout=args.lightgcn_dropout,
         paper_dim=train_args.embed_dim,
         author_dim=train_args.embed_dim,
         layer_size_list=train_args.layer_size_list,
         only_feature=train_args.only_feature,
-        use_lightgcn=train_args.use_lightgcn if train_args.use_lightgcn else True,
+        use_lightgcn=args.use_lightgcn if args.use_lightgcn else True,
         args=train_args,
         norm_adj=lap_matrix
     )
